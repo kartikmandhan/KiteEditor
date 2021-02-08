@@ -4,8 +4,8 @@
 #include "gui.h"
 void editor_init()
 {
-    E.Cx = 0;
-    E.Cy = 0;
+    E.Cx = DEFPOS_X;
+    E.Cy = DEFPOS_Y;
     noecho();
     getmaxyx(win[EDIT_WINDOW], E.screenCols, E.screenRows);
     if (LINES < 30 || COLS < 98)
@@ -24,6 +24,7 @@ void editor_init()
     // wrefresh(win[1]);
     // init
     raw();
+    wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
 }
 
 void editorMoveCursor(int key)
@@ -31,19 +32,23 @@ void editorMoveCursor(int key)
     switch (key)
     {
     case KEY_LEFT:
-        E.Cx--;
+        if (E.Cx > DEFPOS_X)
+            E.Cx--;
 
         break;
     case KEY_RIGHT:
-        E.Cx++;
+        if (E.Cx < LIMIT_X)
+            E.Cx++;
 
         break;
     case KEY_UP:
-        E.Cy--;
+        if (E.Cy > DEFPOS_Y)
+            E.Cy--;
 
         break;
     case KEY_DOWN:
-        E.Cy++;
+        if (E.Cy < LIMIT_Y)
+            E.Cy++;
 
         break;
     }
