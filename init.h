@@ -8,5 +8,5 @@
 int init_colors();
 void init_gui();
 void init_windows();
-
+void handleError(const char *s);
 #endif

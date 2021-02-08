@@ -46,11 +46,11 @@ void init_windows(void)
     keypad(win[EDIT_WINDOW], TRUE);
 }
 
-// void handleError(const char *s)
-// {
-//     perror(s);
-//     exit(1);
-// }
+void handleError(const char *s)
+{
+    perror(s);
+    exit(1);
+}
 // void disableRawMode()
 // {
 //     printf("Thanks for using my editor");

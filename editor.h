@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ncurses.h>
 #include <curses.h>
 #define CTRL_KEY(k) ((k)&0x1f)
@@ -54,7 +55,11 @@ enum win_type
     INFO_WINDOW
 };
 
-/* Current theme used in the editor */
+typedef struct editorRow
+{
+    int size;
+    char *chars;
+} editorRow;
 
 struct editorConfig
 {
@@ -63,8 +68,18 @@ struct editorConfig
     int Cx;
     int Cy;
     char current_theme;
-
+    int numOfRows;
+    editorRow row;
     // struct termios orig_termios;
 } E;
-
+typedef struct vnode
+{
+    struct vnode *head;
+    struct vnode *tail;
+} vnode;
+typedef struct vlist
+{
+    vnode *head;
+    vnode *tail;
+} vlist;
 #endif // !EDITOR_H

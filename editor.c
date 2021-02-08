@@ -1,11 +1,12 @@
-
 #include "editor.h"
 #include "init.h"
 #include "gui.h"
+#include "ADT.h"
 void editor_init()
 {
     E.Cx = DEFPOS_X;
     E.Cy = DEFPOS_Y;
+    E.numOfRows = 0;
     noecho();
     if (LINES < 30 || COLS < 98)
     {
@@ -26,7 +27,46 @@ void editor_init()
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
 }
+void openFile(char *filename)
+{
+    FILE *fp = fopen(filename, "r");
 
+    if (!fp)
+        handleError("fopen");
+    char *line = NULL;
+    // parameter type of lineCapacity
+    size_t lineCapacity = 0;
+    // return type of getline
+    ssize_t lineLength;
+    lineLength = getline(&line, &lineCapacity, fp);
+
+    if (lineLength != -1)
+    {
+        while (lineLength > 0 && (line[lineLength - 1] == '\n' ||
+                                  line[lineLength - 1] == '\r'))
+            lineLength--;
+        E.row.size = lineLength;
+        E.row.chars = (char *)malloc(lineLength + 1);
+        memcpy(E.row.chars, line, lineLength);
+        E.row.chars[lineLength] = '\0';
+        E.numOfRows = 1;
+    }
+    free(line);
+    fclose(fp);
+}
+void editorRefresh()
+{
+    wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    int rowsToPrint = E.numOfRows;
+
+    // wprintw(win[EDIT_WINDOW], "key %ld", rowsToPrint);
+    while (rowsToPrint-- > 0)
+    {
+        if (E.row.size > LIMIT_X)
+
+            wprintw(win[EDIT_WINDOW], "%s", E.row.chars);
+    }
+}
 void editorMoveCursor(int key)
 {
     switch (key)
@@ -76,12 +116,12 @@ void read_key()
         editorMoveCursor(c);
         break;
     case KEY_HOME:
-        wprintw(win[EDIT_WINDOW], "key home");
+        // wprintw(win[EDIT_WINDOW], "key home");
         E.Cx = DEFPOS_X;
         E.Cy = DEFPOS_Y;
         break;
     case KEY_END:
-        wprintw(win[EDIT_WINDOW], "key end");
+        // wprintw(win[EDIT_WINDOW], "key end");
         E.Cx = DEFPOS_X;
         E.Cy = LIMIT_Y;
         break;
@@ -91,17 +131,18 @@ void read_key()
         break;
     }
 }
-int main()
+int main(int argc, char *argv[])
 {
     initscr();
     editor_init();
+    if (argc == 2)
+        openFile(argv[1]);
     // mvprintw(E.screenCols / 2, E.screenRows / 2 - 10, "welcome to my editor");
     while (1)
     {
+        editorRefresh();
         read_key();
         // refresh();
-        wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
-
         // move(10, 5 + x);
         // x += 5;
         // printw("left");

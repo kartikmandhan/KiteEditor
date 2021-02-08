@@ -1,25 +1,18 @@
-#include <stdio.h>
-typedef struct hnode
-{
-    char ch;
-    struct hnode *prev;
-    struct hnode *next;
+#ifndef __ADT_H__
+#define __ADT_H__
 
-} hnode;
-typedef struct hlist
-{
-    hnode *head;
-    hnode *tail;
-} hlist;
+#include "editor.h"
 typedef struct vnode
 {
-    hlist *line;
-    int lineNumber;
-    struct vnode *up;
-    struct vnode *down;
+    editorRow row;
+    struct vnode *next;
+    struct vnode *prev;
 } vnode;
 typedef struct vlist
 {
     vnode *head;
     vnode *tail;
 } vlist;
+void init(vlist *l);
+void appendRow(vlist *l, char *line, int lineLength);
+#endif // !__ADT_H__
