@@ -7,7 +7,6 @@ void editor_init()
     E.Cx = DEFPOS_X;
     E.Cy = DEFPOS_Y;
     noecho();
-    getmaxyx(win[EDIT_WINDOW], E.screenCols, E.screenRows);
     if (LINES < 30 || COLS < 98)
     {
         endwin();
@@ -17,8 +16,9 @@ void editor_init()
     init_colors();
     init_windows();
     refresh();
-
-    draw_edit(1);
+    getmaxyx(win[EDIT_WINDOW], E.screenCols, E.screenRows);
+    E.screenCols -= 2;
+    E.screenRows -= 2;
 
     init_gui();
     // wrefresh(win[1]);
@@ -55,12 +55,12 @@ void editorMoveCursor(int key)
 }
 void read_key()
 {
-    wrefresh(win[EDIT_WINDOW]);
+    // wrefresh(win[EDIT_WINDOW]);
     int c = wgetch(win[EDIT_WINDOW]);
     // wmove(win[EDIT_WINDOW], 10, 0);
 
     // printw("%c", c);
-    // wprintw(win[EDIT_WINDOW], "%d %d", E.Cx, E.Cy);
+    // wprintw(win[EDIT_WINDOW], "%d %d", E.screenCols, E.screenRows);
     switch (c)
     {
     case CTRL_KEY('q'):
@@ -73,10 +73,19 @@ void read_key()
     case KEY_UP:
     case KEY_LEFT:
     case KEY_RIGHT:
-
         editorMoveCursor(c);
-
         break;
+    case KEY_HOME:
+        wprintw(win[EDIT_WINDOW], "key home");
+        E.Cx = DEFPOS_X;
+        E.Cy = DEFPOS_Y;
+        break;
+    case KEY_END:
+        wprintw(win[EDIT_WINDOW], "key end");
+        E.Cx = DEFPOS_X;
+        E.Cy = LIMIT_Y;
+        break;
+
     default:
         mvprintw(10, 5, "else");
         break;
@@ -85,7 +94,6 @@ void read_key()
 int main()
 {
     initscr();
-    int x = 0;
     editor_init();
     // mvprintw(E.screenCols / 2, E.screenRows / 2 - 10, "welcome to my editor");
     while (1)
