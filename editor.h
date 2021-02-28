@@ -7,6 +7,7 @@
 #include <string.h>
 #include <ncurses.h>
 #include <curses.h>
+#include "ADT.h"
 #define CTRL_KEY(k) ((k)&0x1f)
 
 /*
@@ -60,7 +61,19 @@ typedef struct editorRow
     int size;
     char *chars;
 } editorRow;
-
+typedef struct vnode
+{
+    editorRow row;
+    struct vnode *next;
+    struct vnode *prev;
+} vnode;
+typedef struct vlist
+{
+    vnode *head;
+    vnode *tail;
+} vlist;
+void vlist_init(vlist *l);
+void appendRow(vlist *l, char *line, int lineLength);
 struct editorConfig
 {
     int screenRows;
@@ -69,17 +82,8 @@ struct editorConfig
     int Cy;
     char current_theme;
     int numOfRows;
-    editorRow row;
-    // struct termios orig_termios;
+    int x_offset;
+    int y_offset;
+    vlist l;
 } E;
-typedef struct vnode
-{
-    struct vnode *head;
-    struct vnode *tail;
-} vnode;
-typedef struct vlist
-{
-    vnode *head;
-    vnode *tail;
-} vlist;
 #endif // !EDITOR_H

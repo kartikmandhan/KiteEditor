@@ -1,13 +1,40 @@
 #include "editor.h"
 #include "init.h"
 #include "gui.h"
-#include "ADT.h"
+void vlist_init(vlist *l)
+{
+    l->head = l->tail = NULL;
+}
+void appendRow(vlist *l, char *line, int lineLength)
+{
+    E.numOfRows++;
+    vnode *new_node = malloc(sizeof(vnode));
+    new_node->next = NULL;
+    new_node->row.size = lineLength;
+    new_node->row.chars = (char *)malloc(lineLength + 1);
+    memcpy(new_node->row.chars, line, lineLength);
+    new_node->row.chars[lineLength] = '\0';
+    if (l->head == NULL)
+    {
+        new_node->prev = NULL;
+        l->head = l->tail = new_node;
+        return;
+    }
+    vnode *p = l->head;
+    while (p != l->tail)
+        p = p->next;
+    new_node->prev = p;
+    p->next = new_node;
+    l->tail = new_node;
+}
 void editor_init()
 {
     E.Cx = DEFPOS_X;
     E.Cy = DEFPOS_Y;
     E.numOfRows = 0;
+    vlist_init(&E.l);
     noecho();
+    // LINES, COLS gives current rows and cols of the terminal and are defined in Ncurses library
     if (LINES < 30 || COLS < 98)
     {
         endwin();
@@ -38,37 +65,67 @@ void openFile(char *filename)
     size_t lineCapacity = 0;
     // return type of getline
     ssize_t lineLength;
-    lineLength = getline(&line, &lineCapacity, fp);
 
-    if (lineLength != -1)
+    // if (lineLength != -1)
+    while ((lineLength = getline(&line, &lineCapacity, fp)) != -1)
     {
         while (lineLength > 0 && (line[lineLength - 1] == '\n' ||
                                   line[lineLength - 1] == '\r'))
             lineLength--;
-        E.row.size = lineLength;
-        E.row.chars = (char *)malloc(lineLength + 1);
-        memcpy(E.row.chars, line, lineLength);
-        E.row.chars[lineLength] = '\0';
-        E.numOfRows = 1;
+        appendRow(&E.l, line, lineLength);
+        // E.row.size = lineLength;
+        // E.row.chars = (char *)malloc(lineLength + 1);
+        // memcpy(E.row.chars, line, lineLength);
+        // E.row.chars[lineLength] = '\0';
+        // E.numOfRows = 1;
     }
     free(line);
     fclose(fp);
 }
+void move_cursor_right()
+{
+}
+void print_text()
+{
+    // initialising cursor to start of the editor
+    // E.Cx = DEFPOS_X;
+    // E.Cy = DEFPOS_Y;
+    // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    int x = 0, y = 0;
+    vnode *p = E.l.head;
+    while (y < E.numOfRows && y < LIMIT_Y)
+    {
+        wmove(win[EDIT_WINDOW], y + 1, 1);
+        x = 0;
+
+        while (x < p->row.size && x < LIMIT_X)
+        {
+            // if (E.l.head->row.size > LIMIT_X)
+            waddch(win[EDIT_WINDOW], p->row.chars[x]);
+            x++;
+        }
+        p = p->next;
+        y++;
+    }
+}
 void editorRefresh()
 {
-    wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
-    int rowsToPrint = E.numOfRows;
+    // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    // int rowsToPrint = E.numOfRows;
 
     // wprintw(win[EDIT_WINDOW], "key %ld", rowsToPrint);
-    while (rowsToPrint-- > 0)
-    {
-        if (E.row.size > LIMIT_X)
-
-            wprintw(win[EDIT_WINDOW], "%s", E.row.chars);
-    }
+    // static int flag = 0;
+    // if (!flag)
+    // {
+    print_text();
+    // flag = 1;
+    // }
+    wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
 }
 void editorMoveCursor(int key)
 {
+    // wprintw(win[EDIT_WINDOW], "%d %d", E.Cx, E.Cy);
+    // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     switch (key)
     {
     case KEY_LEFT:
