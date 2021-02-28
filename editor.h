@@ -78,12 +78,13 @@ struct editorConfig
 {
     int screenRows;
     int screenCols;
-    int Cx;
-    int Cy;
+    int Cx; // x position of edit window(screen)
+    int Cy; // y position of edit window(screen)
     char current_theme;
     int numOfRows;
     int x_offset;
     int y_offset;
     vlist l;
+    // Cy+y_offset= position of cursor in the screen
 } E;
 #endif // !EDITOR_H

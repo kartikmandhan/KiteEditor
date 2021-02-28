@@ -32,6 +32,8 @@ void editor_init()
     E.Cx = DEFPOS_X;
     E.Cy = DEFPOS_Y;
     E.numOfRows = 0;
+    E.x_offset = 0;
+    E.y_offset = 0;
     vlist_init(&E.l);
     noecho();
     // LINES, COLS gives current rows and cols of the terminal and are defined in Ncurses library
@@ -91,14 +93,21 @@ void print_text()
     // E.Cx = DEFPOS_X;
     // E.Cy = DEFPOS_Y;
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    // these x and y are used for the position where text will be printed
     int x = 0, y = 0;
+    int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
     while (y < E.numOfRows && y < LIMIT_Y)
     {
         wmove(win[EDIT_WINDOW], y + 1, 1);
-        x = 0;
+        x = E.x_offset;
 
-        while (x < p->row.size && x < LIMIT_X)
+        while (file_rowOffset-- > 0)
+        {
+            p = p->next;
+        }
+
+        while (x < p->row.size && x < LIMIT_X + E.x_offset)
         {
             // if (E.l.head->row.size > LIMIT_X)
             waddch(win[EDIT_WINDOW], p->row.chars[x]);
@@ -117,6 +126,7 @@ void editorRefresh()
     // static int flag = 0;
     // if (!flag)
     // {
+
     print_text();
     // flag = 1;
     // }
@@ -124,30 +134,81 @@ void editorRefresh()
 }
 void editorMoveCursor(int key)
 {
-    // wprintw(win[EDIT_WINDOW], "%d %d", E.Cx, E.Cy);
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    static int flag = 0;
+    static vnode *p = NULL;
+    if (!flag)
+    {
+        p = E.l.head;
+        flag = 1;
+    }
+    // wprintw(win[EDIT_WINDOW], "%d %u", p->row.size, p);
     switch (key)
     {
     case KEY_LEFT:
         if (E.Cx > DEFPOS_X)
             E.Cx--;
 
+        else if (E.x_offset > 0)
+        {
+            E.x_offset--;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            wclear(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
+        }
         break;
     case KEY_RIGHT:
-        if (E.Cx < LIMIT_X)
+        if (E.Cx <= p->row.size)
             E.Cx++;
-
+        else if (E.Cx + E.x_offset < p->row.size)
+        {
+            E.x_offset++;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            wclear(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
+        }
         break;
     case KEY_UP:
-        if (E.Cy > DEFPOS_Y)
-            E.Cy--;
 
+        if (E.Cy > DEFPOS_Y)
+        {
+            p = p->prev;
+
+            E.Cy--;
+        }
+        else if (E.y_offset > 0)
+        {
+            p = p->prev;
+
+            E.y_offset--;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            wclear(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
+        }
         break;
     case KEY_DOWN:
-        if (E.Cy < LIMIT_Y)
-            E.Cy++;
 
+        if (E.Cy < LIMIT_Y)
+        {
+            p = p->next;
+
+            E.Cy++;
+        }
+        else if (E.Cy + E.y_offset < E.numOfRows)
+        {
+            p = p->next;
+
+            E.y_offset++;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            wclear(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
+        }
         break;
+    }
+    //makes cursor move up and down only upto bounds of line,when up or down arrow is pressed
+    if (E.Cx > p->row.size)
+    {
+        E.Cx = p->row.size + 1;
     }
 }
 void read_key()
