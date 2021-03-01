@@ -51,7 +51,7 @@ void editor_init()
     E.screenRows -= 2;
 
     init_gui();
-    // wrefresh(win[1]);
+    // wrefresh(win[INFO_WINDOW]);
     // init
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
@@ -156,13 +156,43 @@ void editorMoveCursor(int key)
             wclear(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
+        else if (E.Cy + E.y_offset > DEFPOS_Y)
+        {
+            // move on end of other line on press of <-
+            p = p->prev;
+            if (E.y_offset > 0 && E.Cy == DEFPOS_Y)
+                E.y_offset--;
+            else
+                E.Cy--;
+            if (p->row.size + 1 - LIMIT_X > 0)
+                E.x_offset = p->row.size + 1 - LIMIT_X;
+            E.Cx = LIMIT_X;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            wclear(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
+        }
         break;
     case KEY_RIGHT:
-        if (E.Cx <= p->row.size)
+        if (E.Cx <= p->row.size && E.Cx < LIMIT_X)
             E.Cx++;
-        else if (E.Cx + E.x_offset < p->row.size)
+        else if (E.Cx + E.x_offset <= p->row.size)
         {
             E.x_offset++;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            wclear(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
+        }
+        else if (E.Cy + E.y_offset < E.numOfRows)
+        {
+            // move on end of other line on press of ->
+            p = p->next;
+            if (E.Cy == LIMIT_Y)
+                E.y_offset++;
+            else
+                E.Cy++;
+
+            E.Cx = DEFPOS_X;
+            E.x_offset = 0;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
             wclear(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
@@ -209,16 +239,16 @@ void editorMoveCursor(int key)
     if (E.Cx > p->row.size)
     {
         E.Cx = p->row.size + 1;
+        E.x_offset = 0;
     }
 }
 void read_key()
 {
-    // wrefresh(win[EDIT_WINDOW]);
     int c = wgetch(win[EDIT_WINDOW]);
     // wmove(win[EDIT_WINDOW], 10, 0);
 
     // printw("%c", c);
-    // wprintw(win[EDIT_WINDOW], "%d %d", E.screenCols, E.screenRows);
+    wprintw(win[INFO_WINDOW], "%d %d", E.screenCols, E.screenRows);
     switch (c)
     {
     case CTRL_KEY('q'):
@@ -237,6 +267,7 @@ void read_key()
         // wprintw(win[EDIT_WINDOW], "key home");
         E.Cx = DEFPOS_X;
         E.Cy = DEFPOS_Y;
+
         break;
     case KEY_END:
         // wprintw(win[EDIT_WINDOW], "key end");
@@ -259,7 +290,11 @@ int main(int argc, char *argv[])
     while (1)
     {
         editorRefresh();
+        wclear(win[INFO_WINDOW]);
+        draw_info(INFO_WINDOW);
+        wrefresh(win[INFO_WINDOW]);
         read_key();
+
         // refresh();
         // move(10, 5 + x);
         // x += 5;

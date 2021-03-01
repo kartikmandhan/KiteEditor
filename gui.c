@@ -47,4 +47,17 @@ void draw_edit(enum win_type wt)
 void draw_info(enum win_type wt)
 {
     wbkgd(win[wt], MENU_CLR);
+    wattron(win[wt], MENU_CLR);
+    int offset = 2;
+    mvwprintw(win[wt], 1, offset, "E.Cy=%d", E.Cy);
+    offset += 10;
+    mvwprintw(win[wt], 1, offset, "E.Cx=%d", E.Cx);
+    offset += 20;
+    mvwprintw(win[wt], 1, offset, "E.x_offset=%d", E.x_offset);
+    offset += 20;
+    mvwprintw(win[wt], 1, offset, "E.y_offset=%d", E.y_offset);
+    offset += 20;
+    mvwprintw(win[wt], 1, offset, "E.numOfRows=%d", E.numOfRows);
+
+    wattroff(win[wt], MENU_CLR);
 }
