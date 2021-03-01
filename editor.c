@@ -153,7 +153,7 @@ void editorMoveCursor(int key)
         {
             E.x_offset--;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            wclear(win[EDIT_WINDOW]);
+            werase(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
         else if (E.Cy + E.y_offset > DEFPOS_Y)
@@ -168,7 +168,7 @@ void editorMoveCursor(int key)
                 E.x_offset = p->row.size + 1 - LIMIT_X;
             E.Cx = LIMIT_X;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            wclear(win[EDIT_WINDOW]);
+            werase(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
         break;
@@ -179,7 +179,7 @@ void editorMoveCursor(int key)
         {
             E.x_offset++;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            wclear(win[EDIT_WINDOW]);
+            werase(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
         else if (E.Cy + E.y_offset < E.numOfRows)
@@ -194,7 +194,7 @@ void editorMoveCursor(int key)
             E.Cx = DEFPOS_X;
             E.x_offset = 0;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            wclear(win[EDIT_WINDOW]);
+            werase(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
         break;
@@ -212,7 +212,7 @@ void editorMoveCursor(int key)
 
             E.y_offset--;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            wclear(win[EDIT_WINDOW]);
+            werase(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
         break;
@@ -230,7 +230,7 @@ void editorMoveCursor(int key)
 
             E.y_offset++;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            wclear(win[EDIT_WINDOW]);
+            werase(win[EDIT_WINDOW]);
             draw_window(EDIT_WINDOW);
         }
         break;
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         editorRefresh();
-        wclear(win[INFO_WINDOW]);
+        werase(win[INFO_WINDOW]);
         draw_info(INFO_WINDOW);
         wrefresh(win[INFO_WINDOW]);
         read_key();
