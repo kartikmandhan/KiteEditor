@@ -44,6 +44,7 @@
 #define DEFPOS_Y 1
 #define LIMIT_X (COLS - 2)
 #define LIMIT_Y (LINES - 10)
+#define KITE_TABSIZE 4
 
 /* Editor windows */
 WINDOW *win[WINDOWS_COUNT];
@@ -55,11 +56,12 @@ enum win_type
     EDIT_WINDOW,
     INFO_WINDOW
 };
-
 typedef struct editorRow
 {
     int size;
     char *chars;
+    int rsize;
+    char *render;
 } editorRow;
 typedef struct vnode
 {

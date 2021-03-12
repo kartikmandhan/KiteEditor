@@ -74,6 +74,24 @@ void openFile(char *filename)
         while (lineLength > 0 && (line[lineLength - 1] == '\n' ||
                                   line[lineLength - 1] == '\r'))
             lineLength--;
+        // Convert tabs to spaces, since
+        //\t moves cursor by 8 spaces forward
+        for (int i = 0; i < lineLength; i++)
+        {
+            if (line[i] == '\t')
+            {
+                line = realloc(line, sizeof(char) *
+                                         (lineLength + KITE_TABSIZE + 1));
+                memmove(&line[i + KITE_TABSIZE], &line[i + 1],
+                        sizeof(char) * (lineLength - i + 1));
+
+                for (int j = 0; j < KITE_TABSIZE; j++)
+                    line[i + j] = ' ';
+
+                i += KITE_TABSIZE - 1;
+                lineLength += KITE_TABSIZE - 1;
+            }
+        }
         appendRow(&E.l, line, lineLength);
         // E.row.size = lineLength;
         // E.row.chars = (char *)malloc(lineLength + 1);
@@ -95,6 +113,8 @@ void print_text()
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     // these x and y are used for the position where text will be printed
     int x = 0, y = 0;
+    int tabs = 0;
+
     int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
     while (y < E.numOfRows && y < LIMIT_Y)
@@ -161,15 +181,17 @@ void editorMoveCursor(int key)
             // move on end of other line on press of <-
             p = p->prev;
             if (E.y_offset > 0 && E.Cy == DEFPOS_Y)
+            {
                 E.y_offset--;
+                // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+                werase(win[EDIT_WINDOW]);
+                draw_window(EDIT_WINDOW);
+            }
             else
                 E.Cy--;
             if (p->row.size + 1 - LIMIT_X > 0)
                 E.x_offset = p->row.size + 1 - LIMIT_X;
             E.Cx = LIMIT_X;
-            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            werase(win[EDIT_WINDOW]);
-            draw_window(EDIT_WINDOW);
         }
         break;
     case KEY_RIGHT:
@@ -187,15 +209,17 @@ void editorMoveCursor(int key)
             // move on end of other line on press of ->
             p = p->next;
             if (E.Cy == LIMIT_Y)
+            {
                 E.y_offset++;
+                // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+                werase(win[EDIT_WINDOW]);
+                draw_window(EDIT_WINDOW);
+            }
             else
                 E.Cy++;
 
             E.Cx = DEFPOS_X;
             E.x_offset = 0;
-            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-            werase(win[EDIT_WINDOW]);
-            draw_window(EDIT_WINDOW);
         }
         break;
     case KEY_UP:
@@ -218,7 +242,7 @@ void editorMoveCursor(int key)
         break;
     case KEY_DOWN:
 
-        if (E.Cy < LIMIT_Y)
+        if (E.Cy < LIMIT_Y && E.Cy < E.numOfRows)
         {
             p = p->next;
 
@@ -252,8 +276,6 @@ void read_key()
     switch (c)
     {
     case CTRL_KEY('q'):
-        printw("%c", c);
-
         endwin();
         exit(EXIT_SUCCESS);
         break;
@@ -264,15 +286,20 @@ void read_key()
         editorMoveCursor(c);
         break;
     case KEY_HOME:
-        // wprintw(win[EDIT_WINDOW], "key home");
-        E.Cx = DEFPOS_X;
-        E.Cy = DEFPOS_Y;
+        for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
+        {
+            editorMoveCursor(KEY_UP);
+            editorMoveCursor(KEY_UP);
+        }
 
         break;
     case KEY_END:
         // wprintw(win[EDIT_WINDOW], "key end");
-        E.Cx = DEFPOS_X;
-        E.Cy = LIMIT_Y;
+        for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
+        {
+            editorMoveCursor(KEY_DOWN);
+            editorMoveCursor(KEY_DOWN);
+        }
         break;
 
     default:
