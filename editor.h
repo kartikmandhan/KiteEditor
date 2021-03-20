@@ -60,8 +60,6 @@ typedef struct editorRow
 {
     int size;
     char *chars;
-    int rsize;
-    char *render;
 } editorRow;
 typedef struct vnode
 {
@@ -87,6 +85,8 @@ struct editorConfig
     int x_offset;
     int y_offset;
     vlist l;
+    vnode* currentRow;
+    char fname[FILENAME_MAX];
     // Cy+y_offset= position of cursor in the screen
 } E;
 #endif // !EDITOR_H

@@ -47,17 +47,32 @@ void draw_edit(enum win_type wt)
 void draw_info(enum win_type wt)
 {
     wbkgd(win[wt], MENU_CLR);
+    wattron(win[wt], COLOR_PAIR(2));
+    // wattron(win[wt], A_REVERSE);
+    mvwprintw(win[INFO_WINDOW], 0, COLS / 2 - 16,
+              " y: %3d, x: %3d, yo: %4d, xo: %4d ",
+              E.Cy, E.Cx,
+              E.y_offset, E.x_offset);
+    // wattroff(win[wt], A_REVERSE);
+    wattroff(win[wt], COLOR_PAIR(2));
     wattron(win[wt], MENU_CLR);
-    int offset = 2;
-    mvwprintw(win[wt], 1, offset, "E.Cy=%d", E.Cy);
-    offset += 10;
-    mvwprintw(win[wt], 1, offset, "E.Cx=%d", E.Cx);
-    offset += 20;
-    mvwprintw(win[wt], 1, offset, "E.x_offset=%d", E.x_offset);
-    offset += 20;
-    mvwprintw(win[wt], 1, offset, "E.y_offset=%d", E.y_offset);
-    offset += 20;
-    mvwprintw(win[wt], 1, offset, "E.numOfRows=%d", E.numOfRows);
-
+    int offset = 4;
+    char fname[20] = "[No Name]";
+    int namelen = strlen(E.fname);
+    if (namelen > 16)
+    {
+        strncpy(fname, E.fname + namelen - 16, sizeof(char) * 19);
+        fname[0] = fname[1] = fname[2] = '.';
+        fname[16] = '\0';
+        mvwprintw(win[wt], 2, offset, "FILE: %s", fname);
+        offset += 26;
+    }
+    else
+    {
+        strcpy(fname, E.fname);
+        mvwprintw(win[wt], 2, offset, "FILE: %s", fname);
+        offset += 10 + namelen;
+    }
+    mvwprintw(win[wt], 2, COLS - 10, "v1.0");
     wattroff(win[wt], MENU_CLR);
 }

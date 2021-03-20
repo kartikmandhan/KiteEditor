@@ -59,7 +59,7 @@ void editor_init()
 void openFile(char *filename)
 {
     FILE *fp = fopen(filename, "r");
-
+    strcpy(E.fname, filename);
     if (!fp)
         handleError("fopen");
     char *line = NULL;
@@ -100,11 +100,27 @@ void openFile(char *filename)
         // E.numOfRows = 1;
     }
     free(line);
+    E.currentRow = E.l.head;
     fclose(fp);
 }
-void move_cursor_right()
+void editorRowInsertChar(editorRow *row, int at, int ch)
 {
+    if (at < 0 || at > row->size)
+        at = row->size;
+    row->chars = (char *)realloc(row->chars, row->size + 2);
+    // +2 since we need space for \0 byte too
+    memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+    row->size++;
+    row->chars[at] = ch;
 }
+void editorInsertChar(int c)
+{
+    if (E.Cy + E.y_offset == E.numOfRows)
+        appendRow(&E.l, "", 0);
+    editorRowInsertChar(&E.currentRow->row, E.Cx - DEFPOS_X, c);
+    E.Cx++;
+}
+
 void print_text()
 {
     // initialising cursor to start of the editor
@@ -113,7 +129,6 @@ void print_text()
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     // these x and y are used for the position where text will be printed
     int x = 0, y = 0;
-    int tabs = 0;
 
     int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
@@ -151,17 +166,21 @@ void editorRefresh()
     // flag = 1;
     // }
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    werase(win[INFO_WINDOW]);
+    draw_window(INFO_WINDOW);
+
+    wrefresh(win[INFO_WINDOW]);
 }
 void editorMoveCursor(int key)
 {
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
-    static int flag = 0;
-    static vnode *p = NULL;
-    if (!flag)
-    {
-        p = E.l.head;
-        flag = 1;
-    }
+    // static int flag = 0;
+    // static vnode *p = NULL;
+    // if (!flag)
+    // {
+    //     p = E.l.head;
+    //     flag = 1;
+    // }
     // wprintw(win[EDIT_WINDOW], "%d %u", p->row.size, p);
     switch (key)
     {
@@ -179,25 +198,25 @@ void editorMoveCursor(int key)
         else if (E.Cy + E.y_offset > DEFPOS_Y)
         {
             // move on end of other line on press of <-
-            p = p->prev;
+            E.currentRow = E.currentRow->prev;
             if (E.y_offset > 0 && E.Cy == DEFPOS_Y)
             {
                 E.y_offset--;
-                // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
-                werase(win[EDIT_WINDOW]);
-                draw_window(EDIT_WINDOW);
             }
             else
                 E.Cy--;
-            if (p->row.size + 1 - LIMIT_X > 0)
-                E.x_offset = p->row.size + 1 - LIMIT_X;
+            if (E.currentRow->row.size + 1 - LIMIT_X > 0)
+                E.x_offset = E.currentRow->row.size + 1 - LIMIT_X;
             E.Cx = LIMIT_X;
+            // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
+            werase(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
         }
         break;
     case KEY_RIGHT:
-        if (E.Cx <= p->row.size && E.Cx < LIMIT_X)
+        if (E.Cx <= E.currentRow->row.size && E.Cx < LIMIT_X)
             E.Cx++;
-        else if (E.Cx + E.x_offset <= p->row.size)
+        else if (E.Cx + E.x_offset <= E.currentRow->row.size)
         {
             E.x_offset++;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
@@ -207,7 +226,7 @@ void editorMoveCursor(int key)
         else if (E.Cy + E.y_offset < E.numOfRows)
         {
             // move on end of other line on press of ->
-            p = p->next;
+            E.currentRow = E.currentRow->next;
             if (E.Cy == LIMIT_Y)
             {
                 E.y_offset++;
@@ -226,13 +245,13 @@ void editorMoveCursor(int key)
 
         if (E.Cy > DEFPOS_Y)
         {
-            p = p->prev;
+            E.currentRow = E.currentRow->prev;
 
             E.Cy--;
         }
         else if (E.y_offset > 0)
         {
-            p = p->prev;
+            E.currentRow = E.currentRow->prev;
 
             E.y_offset--;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
@@ -244,13 +263,13 @@ void editorMoveCursor(int key)
 
         if (E.Cy < LIMIT_Y && E.Cy < E.numOfRows)
         {
-            p = p->next;
+            E.currentRow = E.currentRow->next;
 
             E.Cy++;
         }
         else if (E.Cy + E.y_offset < E.numOfRows)
         {
-            p = p->next;
+            E.currentRow = E.currentRow->next;
 
             E.y_offset++;
             // these two functions clear the window and redraw the border which is necessary to prevent overwriting of text
@@ -260,9 +279,9 @@ void editorMoveCursor(int key)
         break;
     }
     //makes cursor move up and down only upto bounds of line,when up or down arrow is pressed
-    if (E.Cx > p->row.size)
+    if (E.Cx > E.currentRow->row.size)
     {
-        E.Cx = p->row.size + 1;
+        E.Cx = E.currentRow->row.size + 1;
         E.x_offset = 0;
     }
 }
@@ -303,7 +322,7 @@ void read_key()
         break;
 
     default:
-        mvprintw(10, 5, "else");
+        editorInsertChar(c);
         break;
     }
 }
@@ -317,9 +336,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         editorRefresh();
-        werase(win[INFO_WINDOW]);
-        draw_info(INFO_WINDOW);
-        wrefresh(win[INFO_WINDOW]);
+
         read_key();
 
         // refresh();
