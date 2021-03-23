@@ -103,6 +103,54 @@ void openFile(char *filename)
     E.currentRow = E.l.head;
     fclose(fp);
 }
+char *dataStructureToString(int *totalLength)
+{
+    int len = 0;
+    vnode *p = E.l.head;
+
+    for (int i = 0; i < E.numOfRows; i++)
+    {
+        len += p->row.size + 1;
+
+        p = p->next;
+    }
+    *totalLength = len;
+    char *result = (char *)malloc(sizeof(char) * len);
+    char *pointerToResult = result;
+    p = E.l.head;
+    for (int i = 0; i < E.numOfRows; i++)
+    {
+        memcpy(pointerToResult, p->row.chars, p->row.size);
+        pointerToResult += p->row.size;
+        // replacing '\0' with '\n' character
+        *pointerToResult = '\n';
+        pointerToResult++;
+        p = p->next;
+    }
+    mvwprintw(win[MENU_WINDOW], 1, 25, "%d", len);
+    return result;
+}
+void saveFile()
+{
+    int buflen = 0;
+    char *buf = dataStructureToString(&buflen);
+    FILE *fp = fopen(E.fname, "w");
+    if (fp == NULL)
+    {
+        return;
+    }
+    // mvwprintw(win[MENU_WINDOW], 1, 25, "%s %d", buf,buflen);
+    wrefresh(win[MENU_WINDOW]);
+    int wsize = fwrite(buf, sizeof(char), buflen, fp);
+    if (wsize != buflen)
+    {
+        free(buf);
+        printf("error\n");
+        fclose(fp);
+    }
+    free(buf);
+    fclose(fp);
+}
 void editorRowInsertChar(editorRow *row, int at, int ch)
 {
     if (at < 0 || at > row->size)
@@ -326,8 +374,9 @@ void read_key()
         }
         break;
     case KEY_ENTER:
-    case '\r':
         break;
+    case CTRL_KEY('s'):
+        saveFile();
     default:
         editorInsertChar(c);
         break;
