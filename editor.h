@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <ncurses.h>
 #include <curses.h>
-#include "ADT.h"
 #define CTRL_KEY(k) ((k)&0x1f)
 
 /*
@@ -85,7 +85,7 @@ struct editorConfig
     int x_offset;
     int y_offset;
     vlist l;
-    vnode* currentRow;
+    vnode *currentRow;
     char fname[FILENAME_MAX];
     // Cy+y_offset= position of cursor in the screen
 } E;

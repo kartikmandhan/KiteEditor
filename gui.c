@@ -64,13 +64,13 @@ void draw_info(enum win_type wt)
         strncpy(fname, E.fname + namelen - 16, sizeof(char) * 19);
         fname[0] = fname[1] = fname[2] = '.';
         fname[16] = '\0';
-        mvwprintw(win[wt], 2, offset, "FILE: %s", fname);
+        mvwprintw(win[wt], 2, offset, "FILE: %s", E.fname);
         offset += 26;
     }
     else
     {
         strcpy(fname, E.fname);
-        mvwprintw(win[wt], 2, offset, "FILE: %s", fname);
+        mvwprintw(win[wt], 2, offset, "FILE: %s", E.fname);
         offset += 10 + namelen;
     }
     mvwprintw(win[wt], 2, COLS - 10, "v1.0");

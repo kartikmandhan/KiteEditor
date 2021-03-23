@@ -115,6 +115,11 @@ void editorRowInsertChar(editorRow *row, int at, int ch)
 }
 void editorInsertChar(int c)
 {
+    if (iscntrl(c))
+    {
+        flushinp();
+        return;
+    }
     if (E.Cy + E.y_offset == E.numOfRows)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx - DEFPOS_X, c);
@@ -320,7 +325,9 @@ void read_key()
             editorMoveCursor(KEY_DOWN);
         }
         break;
-
+    case KEY_ENTER:
+    case '\r':
+        break;
     default:
         editorInsertChar(c);
         break;
