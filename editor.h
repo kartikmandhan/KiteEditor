@@ -9,6 +9,7 @@
 #include <ncurses.h>
 #include <curses.h>
 #define CTRL_KEY(k) ((k)&0x1f)
+#define GAP_LEN 20
 
 /*
  * This implementation has 3 windows: menu, edit, info.
@@ -60,6 +61,9 @@ typedef struct editorRow
 {
     int size;
     char *chars;
+    int gap_size;
+    int gap_left;
+    int gap_right;
 } editorRow;
 typedef struct vnode
 {

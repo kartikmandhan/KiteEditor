@@ -12,6 +12,9 @@ void appendRow(vlist *l, char *line, int lineLength)
     new_node->next = NULL;
     new_node->row.size = lineLength;
     new_node->row.chars = (char *)malloc(lineLength + 1);
+    new_node->row.gap_size = 0;
+    new_node->row.gap_left = -1;
+    new_node->row.gap_right = -1;
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
     if (l->head == NULL)
@@ -151,15 +154,24 @@ void saveFile()
     free(buf);
     fclose(fp);
 }
+void grow()
+{
+}
 void editorRowInsertChar(editorRow *row, int at, int ch)
 {
     if (at < 0 || at > row->size)
         at = row->size;
-    row->chars = (char *)realloc(row->chars, row->size + 2);
+    if (row->gap_left > row->gap_right)
+    {
+        row->chars = (char *)realloc(row->chars, row->size + GAP_LEN + 1);
+        memmove(&row->chars[at + GAP_LEN + 1], &row->chars[at], row->size - at + 1);
+        row->size += GAP_LEN + 1;
+    }
     // +2 since we need space for \0 byte too
-    memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
-    row->size++;
+    // if(at)
     row->chars[at] = ch;
+    row->gap_size--;
+    row->gap_left++;
 }
 void editorInsertChar(int c)
 {
