@@ -59,6 +59,7 @@ void draw_info(enum win_type wt)
     int offset = 4;
     char fname[20] = "[No Name]";
     int namelen = strlen(E.fname);
+    int statusLength = strlen(E.statusMessage);
     if (namelen > 16)
     {
         strncpy(fname, E.fname + namelen - 16, sizeof(char) * 19);
@@ -73,6 +74,16 @@ void draw_info(enum win_type wt)
         mvwprintw(win[wt], 2, offset, "FILE: %s", E.fname);
         offset += 10 + namelen;
     }
+    // if (statusLength > offset-COLS-2)
+    // {
+    //     E.statusMessage[COLS - 1] = '\0';
+    // }
+    if (E.status == 1)
+    {
+        mvwprintw(win[wt], 2, offset, "Error: ");
+        offset += 7;
+    }
+    mvwprintw(win[wt], 2, offset, "%s", E.statusMessage);
     mvwprintw(win[wt], 2, COLS - 10, "v1.0");
     wattroff(win[wt], MENU_CLR);
 }

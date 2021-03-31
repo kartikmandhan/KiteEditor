@@ -8,6 +8,8 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include <curses.h>
+// for variable arguements having functions
+#include <stdarg.h>
 #define CTRL_KEY(k) ((k)&0x1f)
 
 /*
@@ -76,8 +78,6 @@ void vlist_init(vlist *l);
 void appendRow(vlist *l, char *line, int lineLength);
 struct editorConfig
 {
-    int screenRows;
-    int screenCols;
     int Cx; // x position of edit window(screen)
     int Cy; // y position of edit window(screen)
     char current_theme;
@@ -87,6 +87,11 @@ struct editorConfig
     vlist l;
     vnode *currentRow;
     char fname[FILENAME_MAX];
+    int status;
+    char statusMessage[100];
+    int dirtyFlag;
+
     // Cy+y_offset= position of cursor in the screen
 } E;
 #endif // !EDITOR_H
+void setEditorStatus(int status, char *format, ...);

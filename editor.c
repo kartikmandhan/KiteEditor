@@ -46,10 +46,6 @@ void editor_init()
     init_colors();
     init_windows();
     refresh();
-    getmaxyx(win[EDIT_WINDOW], E.screenCols, E.screenRows);
-    E.screenCols -= 2;
-    E.screenRows -= 2;
-
     init_gui();
     // wrefresh(win[INFO_WINDOW]);
     // init
@@ -61,7 +57,11 @@ void openFile(char *filename)
     FILE *fp = fopen(filename, "r");
     strcpy(E.fname, filename);
     if (!fp)
-        handleError("fopen");
+    {
+        setEditorStatus(1, "Unable to open the file");
+        return;
+    }
+
     char *line = NULL;
     // parameter type of lineCapacity
     size_t lineCapacity = 0;
@@ -101,6 +101,8 @@ void openFile(char *filename)
     }
     free(line);
     E.currentRow = E.l.head;
+    setEditorStatus(0, "File opened Successfully");
+
     fclose(fp);
 }
 char *dataStructureToString(int *totalLength)
@@ -344,7 +346,6 @@ void read_key()
     // wmove(win[EDIT_WINDOW], 10, 0);
 
     // printw("%c", c);
-    wprintw(win[INFO_WINDOW], "%d %d", E.screenCols, E.screenRows);
     switch (c)
     {
     case CTRL_KEY('q'):
@@ -381,6 +382,17 @@ void read_key()
         editorInsertChar(c);
         break;
     }
+}
+void setEditorStatus(int status, char *format, ...)
+{
+    E.status = status;
+    va_list args;
+    va_start(args, format);
+    // This function will take a format string and a variable number of arguments, like the printf().
+    vsprintf(E.statusMessage, format, args);
+    wclear(win[INFO_WINDOW]);
+    draw_window(INFO_WINDOW);
+    va_end(args);
 }
 int main(int argc, char *argv[])
 {
