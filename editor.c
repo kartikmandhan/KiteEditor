@@ -172,7 +172,7 @@ void editorInsertChar(int c)
     }
     if (E.Cy + E.y_offset == E.numOfRows)
         appendRow(&E.l, "", 0);
-    editorRowInsertChar(&E.currentRow->row, E.Cx - DEFPOS_X, c);
+    editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
     E.Cx++;
 }
 
