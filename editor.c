@@ -12,9 +12,11 @@ void appendRow(vlist *l, char *line, int lineLength)
     new_node->next = NULL;
     new_node->row.size = lineLength;
     new_node->row.chars = (char *)malloc(lineLength + 1);
+    new_node->row.gsize = lineLength;
     new_node->row.gap_size = 0;
     new_node->row.gap_left = -1;
     new_node->row.gap_right = -1;
+    new_node->row.gapBuffer = NULL;
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
     if (l->head == NULL)
@@ -58,6 +60,175 @@ void editor_init()
     // init
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+}
+void display()
+{
+    vnode *p = E.l.head;
+    do
+    {
+        if (p->row.gapBuffer != NULL)
+        {
+
+            for (int i = 0; i < p->row.gsize; i++)
+            {
+                printf("%c", p->row.gapBuffer[i]);
+            }
+            printf("\ngap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", p->row.gap_size, p->row.gap_left, p->row.gap_right, p->row.gsize, p->row.size);
+        }
+        else
+        {
+            for (int i = 0; i < p->row.size; i++)
+            {
+                printf("%c", p->row.chars[i]);
+            }
+        }
+        printf("\n");
+        p = p->next;
+    } while (p != E.l.tail);
+
+    printf("\n");
+}
+
+// Function that is used to move the gap
+// left in the array
+void left(int position, editorRow *row)
+{
+    // Move the gap left character by character
+    // and the buffers
+    while (position < row->gap_left)
+    {
+        row->gap_left--;
+        row->gap_right--;
+        row->gapBuffer[row->gap_right + 1] = row->gapBuffer[row->gap_left];
+        row->gapBuffer[row->gap_left] = '\0';
+    }
+}
+
+// Function that is used to move the gap
+// right in the array
+void right(int position, editorRow *row)
+{
+    // Move the gap right character by character
+    // and the row->gapBuffers
+    while (position > row->gap_left)
+    {
+        row->gap_left++;
+        row->gap_right++;
+        row->gapBuffer[row->gap_left - 1] = row->gapBuffer[row->gap_right];
+        row->gapBuffer[row->gap_right] = '\0';
+    }
+}
+
+// Function to control the movement of gap
+// by checking its position to the point of
+// insertion
+void move_cursor_gapBuffer(editorRow *row, int position)
+{
+    if (position < row->gap_left)
+    {
+        // printf("left\n");
+        left(position, row);
+    }
+    else
+    {
+        // printf("right\n");
+
+        right(position, row);
+    }
+}
+void grow(editorRow *row, int position)
+{
+    row->gapBuffer = (char *)realloc(row->gapBuffer, row->size + GAP_LEN + 1);
+    row->gsize += GAP_LEN;
+    char a[row->gsize];
+    // Copy characters of buffer to a[]
+    // after position
+    for (int i = position; i < row->gsize; i++)
+    {
+        a[i - position] = row->gapBuffer[i];
+    }
+    // printf("pos:%d %d\n", strlen(a), row->gsize - position - GAP_LEN);
+
+    // Insert a gap of k from index position
+    // gap is being represented by '-'
+    for (int i = 0; i < GAP_LEN; i++)
+    {
+        row->gapBuffer[i + position] = '\0';
+    }
+    // printf("grow%s\n", row->gapBuffer);
+    // Reinsert the remaining array
+    for (int i = 0; i < row->gsize - position - GAP_LEN; i++)
+    {
+        row->gapBuffer[position + GAP_LEN + i] = a[i];
+    }
+
+    row->gap_size += GAP_LEN;
+    row->gap_right += GAP_LEN;
+    // printf("grow:gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d\n", row->gap_size, row->gap_left, row->gap_right, row->gsize, row->size);
+    // display();
+}
+void editorRowInsertChar(editorRow *row, int at, int ch)
+{
+    if (at < 0 || at > row->size)
+        at = row->size;
+    if (row->gapBuffer == NULL)
+    {
+        row->gapBuffer = (char *)malloc(sizeof(char) * (row->size + GAP_LEN + 1));
+        strncpy(row->gapBuffer, row->chars, row->size);
+        row->gsize = row->size + GAP_LEN;
+        row->gap_left = at;
+        row->gap_right = at + GAP_LEN - 1;
+        row->gap_size += GAP_LEN;
+        for (int i = 0; i < GAP_LEN; i++)
+        {
+            row->gapBuffer[at + i] = '\0';
+        }
+        strncpy(&row->gapBuffer[at + GAP_LEN], &row->chars[at], row->size - at + 1);
+        // printf("herre:%s\n", row->gapBuffer);
+    }
+    if (at != row->gap_left)
+    {
+        move_cursor_gapBuffer(row, at);
+    }
+    if (row->gap_left == row->gap_right)
+    {
+        grow(row, at);
+    }
+    row->gapBuffer[at] = ch;
+    row->size++;
+    row->gap_size--;
+    row->gap_left++;
+    // printf("edit:gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d\n", row->gap_size, row->gap_left, row->gap_right, row->gsize, row->size);
+}
+void deletion(editorRow *row, int position)
+{
+    // If the point is not the gap check
+    // and move the cursor to that point
+    if (row->gapBuffer == NULL)
+    {
+        row->gapBuffer = (char *)malloc(sizeof(char) * (row->size + GAP_LEN + 1));
+        strncpy(row->gapBuffer, row->chars, row->size);
+        row->gsize = row->size + GAP_LEN;
+        row->gap_left = position;
+        row->gap_right = position + GAP_LEN - 1;
+        row->gap_size += GAP_LEN;
+        for (int i = 0; i < GAP_LEN; i++)
+        {
+            row->gapBuffer[position + i] = '\0';
+        }
+        strncpy(&row->gapBuffer[position + GAP_LEN], &row->chars[position], row->size - position + 1);
+        // printf("herre:%s\n", row->gapBuffer);
+    }
+    if (position + 1 != row->gap_left)
+    {
+        move_cursor_gapBuffer(row, position + 1);
+    }
+
+    // Reduce the gap_left
+    row->gap_left--;
+    row->size--;
+    row->gap_size++;
+    row->gapBuffer[row->gap_left] = '\0';
 }
 void openFile(char *filename)
 {
@@ -106,11 +277,29 @@ void openFile(char *filename)
     E.currentRow = E.l.head;
     fclose(fp);
 }
+void gapBuffertoRows()
+{
+    vnode *p = E.l.head;
+    do
+    {
+        if (p->row.gapBuffer != NULL)
+        {
+            memmove(&p->row.gapBuffer[p->row.gap_left], &p->row.gapBuffer[p->row.gap_right + 1], p->row.gsize - p->row.gap_right);
+            // exchanging pointers
+            char *tmp = p->row.chars;
+            // printf("%s", p->row.gapBuffer);
+            p->row.chars = p->row.gapBuffer;
+            free(tmp);
+        }
+        p = p->next;
+    } while (p != E.l.tail);
+}
+
 char *dataStructureToString(int *totalLength)
 {
     int len = 0;
     vnode *p = E.l.head;
-
+    gapBuffertoRows();
     for (int i = 0; i < E.numOfRows; i++)
     {
         len += p->row.size + 1;
@@ -154,25 +343,7 @@ void saveFile()
     free(buf);
     fclose(fp);
 }
-void grow()
-{
-}
-void editorRowInsertChar(editorRow *row, int at, int ch)
-{
-    if (at < 0 || at > row->size)
-        at = row->size;
-    if (row->gap_left > row->gap_right)
-    {
-        row->chars = (char *)realloc(row->chars, row->size + GAP_LEN + 1);
-        memmove(&row->chars[at + GAP_LEN + 1], &row->chars[at], row->size - at + 1);
-        row->size += GAP_LEN + 1;
-    }
-    // +2 since we need space for \0 byte too
-    // if(at)
-    row->chars[at] = ch;
-    row->gap_size--;
-    row->gap_left++;
-}
+
 void editorInsertChar(int c)
 {
     if (iscntrl(c))
@@ -182,7 +353,7 @@ void editorInsertChar(int c)
     }
     if (E.Cy + E.y_offset == E.numOfRows)
         appendRow(&E.l, "", 0);
-    editorRowInsertChar(&E.currentRow->row, E.Cx - DEFPOS_X, c);
+    editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
     E.Cx++;
 }
 
@@ -206,12 +377,25 @@ void print_text()
         {
             p = p->next;
         }
-
-        while (x < p->row.size && x < LIMIT_X + E.x_offset)
+        if (p->row.gapBuffer != NULL)
         {
-            // if (E.l.head->row.size > LIMIT_X)
-            waddch(win[EDIT_WINDOW], p->row.chars[x]);
-            x++;
+            while (x < p->row.gsize && x < LIMIT_X + E.x_offset)
+            {
+                // if (E.l.head->row.size > LIMIT_X)
+                if (p->row.gapBuffer[x] != '\0')
+                    waddch(win[EDIT_WINDOW], p->row.gapBuffer[x]);
+                x++;
+            }
+        }
+        else
+        {
+
+            while (x < p->row.size && x < LIMIT_X + E.x_offset)
+            {
+                // if (E.l.head->row.size > LIMIT_X)
+                waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                x++;
+            }
         }
         p = p->next;
         y++;

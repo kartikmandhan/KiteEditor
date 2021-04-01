@@ -74,5 +74,8 @@ void draw_info(enum win_type wt)
         offset += 10 + namelen;
     }
     mvwprintw(win[wt], 2, COLS - 10, "v1.0");
+    vnode *p = E.l.head;
+    // mvwprintw(win[wt], 1, DEFPOS_X, "gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", p->row.gap_size, p->row.gap_left, p->row.gap_right, p->row.gsize, p->row.size);
+    mvwprintw(win[wt], 1, DEFPOS_X, "gap->size=%d", p->row.size);
     wattroff(win[wt], MENU_CLR);
 }

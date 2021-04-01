@@ -61,9 +61,11 @@ typedef struct editorRow
 {
     int size;
     char *chars;
+    char *gapBuffer;
     int gap_size;
     int gap_left;
     int gap_right;
+    int gsize;
 } editorRow;
 typedef struct vnode
 {
