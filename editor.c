@@ -39,6 +39,7 @@ void editor_init()
     E.numOfRows = 0;
     E.x_offset = 0;
     E.y_offset = 0;
+    E.dirtyFlag = 0;
     vlist_init(&E.l);
     noecho();
     // LINES, COLS gives current rows and cols of the terminal and are defined in Ncurses library
@@ -355,6 +356,7 @@ void saveFile()
     }
     free(buf);
     fclose(fp);
+    E.dirtyFlag = 0;
 }
 
 void editorInsertChar(int c)
@@ -368,6 +370,7 @@ void editorInsertChar(int c)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
     E.Cx++;
+    E.dirtyFlag = 1;
 }
 
 void print_text()

@@ -84,5 +84,7 @@ void draw_info(enum win_type wt)
     }
     mvwprintw(win[wt], 2, offset, "%s", E.statusMessage);
     mvwprintw(win[wt], 2, COLS - 10, "v1.0");
+    if (E.dirtyFlag)
+        mvwprintw(win[wt], 3, COLS - 20, "(modified)");
     wattroff(win[wt], MENU_CLR);
 }
