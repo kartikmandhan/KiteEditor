@@ -175,7 +175,7 @@ void editorInsertChar(int c)
     if (E.Cy + E.y_offset == E.numOfRows)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
-    E.Cx++;
+    editorMoveCursor(KEY_RIGHT);
     E.dirtyFlag = 1;
 }
 
@@ -343,6 +343,14 @@ void editorMoveCursor(int key)
         E.x_offset = 0;
     }
 }
+void editorRowDelChar(editorRow *row, int at)
+{
+    if (at < DEFPOS_X || at >= row->size)
+        return;
+    memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
+    row->size--;
+    E.dirtyFlag = 1;
+}
 void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
@@ -401,7 +409,7 @@ void setEditorStatus(int status, char *format, ...)
     va_start(args, format);
     // This function will take a format string and a variable number of arguments, like the printf().
     vsprintf(E.statusMessage, format, args);
-    wclear(win[INFO_WINDOW]);
+    werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
     va_end(args);
 }
