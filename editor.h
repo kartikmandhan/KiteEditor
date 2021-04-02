@@ -11,7 +11,7 @@
 // for variable arguements having functions
 #include <stdarg.h>
 #define CTRL_KEY(k) ((k)&0x1f)
-
+#define KITE_QUIT_TIMES 3
 /*
  * This implementation has 3 windows: menu, edit, info.
  *

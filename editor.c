@@ -34,6 +34,7 @@ void editor_init()
     E.numOfRows = 0;
     E.x_offset = 0;
     E.y_offset = 0;
+    E.dirtyFlag = 0;
     vlist_init(&E.l);
     noecho();
     // LINES, COLS gives current rows and cols of the terminal and are defined in Ncurses library
@@ -152,6 +153,7 @@ void saveFile()
     }
     free(buf);
     fclose(fp);
+    E.dirtyFlag = 0;
 }
 void editorRowInsertChar(editorRow *row, int at, int ch)
 {
@@ -174,6 +176,7 @@ void editorInsertChar(int c)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
     E.Cx++;
+    E.dirtyFlag = 1;
 }
 
 void print_text()
@@ -344,11 +347,18 @@ void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
     // wmove(win[EDIT_WINDOW], 10, 0);
+    static int quit_times = KITE_QUIT_TIMES;
 
     // printw("%c", c);
     switch (c)
     {
     case CTRL_KEY('q'):
+        if (E.dirtyFlag && quit_times > 0)
+        {
+            setEditorStatus(0, "WARNING!!! File has unsaved changes.Press Ctrl-Q %d more times to quit.", quit_times);
+            quit_times--;
+            return;
+        }
         endwin();
         exit(EXIT_SUCCESS);
         break;
@@ -382,6 +392,7 @@ void read_key()
         editorInsertChar(c);
         break;
     }
+    quit_times = KITE_QUIT_TIMES;
 }
 void setEditorStatus(int status, char *format, ...)
 {
