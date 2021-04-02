@@ -73,6 +73,16 @@ void draw_info(enum win_type wt)
         mvwprintw(win[wt], 2, offset, "FILE: %s", E.fname);
         offset += 10 + namelen;
     }
+    // if (statusLength > offset-COLS-2)
+    // {
+    //     E.statusMessage[COLS - 1] = '\0';
+    // }
+    if (E.status == 1)
+    {
+        mvwprintw(win[wt], 2, offset, "Error: ");
+        offset += 7;
+    }
+    mvwprintw(win[wt], 2, offset, "%s", E.statusMessage);
     mvwprintw(win[wt], 2, COLS - 10, "v1.0");
     vnode *p = E.l.head;
     // mvwprintw(win[wt], 1, DEFPOS_X, "gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", p->row.gap_size, p->row.gap_left, p->row.gap_right, p->row.gsize, p->row.size);

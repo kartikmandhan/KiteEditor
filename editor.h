@@ -8,6 +8,8 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include <curses.h>
+// for variable arguements having functions
+#include <stdarg.h>
 #define CTRL_KEY(k) ((k)&0x1f)
 #define GAP_LEN 20
 
@@ -93,6 +95,10 @@ struct editorConfig
     vlist l;
     vnode *currentRow;
     char fname[FILENAME_MAX];
+    int status;
+    char statusMessage[100];
+    int dirtyFlag;
     // Cy+y_offset= position of cursor in the screen
 } E;
 #endif // !EDITOR_H
+void setEditorStatus(int status, char *format, ...);
