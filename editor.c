@@ -285,7 +285,7 @@ void setEditorStatus(int status, char *format, ...)
     va_start(args, format);
     // This function will take a format string and a variable number of arguments, like the printf().
     vsprintf(E.statusMessage, format, args);
-    wclear(win[INFO_WINDOW]);
+    werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
     va_end(args);
 }
@@ -302,6 +302,7 @@ void gapBuffertoRows()
             // printf("%s", p->row.gapBuffer);
             p->row.chars = p->row.gapBuffer;
             free(tmp);
+            p->row.gapBuffer = NULL;
         }
         p = p->next;
     } while (p != E.l.tail);
@@ -545,6 +546,7 @@ void editorMoveCursor(int key)
         E.Cx = E.currentRow->row.size + 1;
         E.x_offset = 0;
     }
+    setEditorStatus(0, "gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", E.currentRow->row.gap_size, E.currentRow->row.gap_left, E.currentRow->row.gap_right, E.currentRow->row.gsize, E.currentRow->row.size);
 }
 void read_key()
 {
