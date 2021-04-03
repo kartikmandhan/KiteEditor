@@ -345,11 +345,21 @@ void editorMoveCursor(int key)
 }
 void editorRowDelChar(editorRow *row, int at)
 {
-    if (at < DEFPOS_X || at >= row->size)
+    if (at < 0 || at >= row->size)
         return;
     memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
     row->size--;
     E.dirtyFlag = 1;
+}
+void editorDelChar()
+{
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+    if (E.Cx >= DEFPOS_X)
+    {
+        editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
+        editorMoveCursor(KEY_LEFT);
+    }
 }
 void read_key()
 {
@@ -396,6 +406,13 @@ void read_key()
         break;
     case CTRL_KEY('s'):
         saveFile();
+        break;
+    case KEY_DC:
+    case KEY_BS:
+    case KEY_DEL:
+    case KEY_BACKSPACE:
+        editorDelChar();
+        break;
     default:
         editorInsertChar(c);
         break;

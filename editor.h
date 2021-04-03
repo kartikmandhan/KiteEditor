@@ -47,7 +47,11 @@
 #define LIMIT_X (COLS - 2)
 #define LIMIT_Y (LINES - 10)
 #define KITE_TABSIZE 4
-
+#define KEY_BS '\b'
+#define KEY_DEL 127
+#define KEY_CR '\r'
+#define KEY_HT '\t'
+#define KEY_NL '\n'
 /* Editor windows */
 WINDOW *win[WINDOWS_COUNT];
 
