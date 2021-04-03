@@ -198,7 +198,7 @@ void editorRowInsertChar(editorRow *row, int at, int ch)
     row->gap_left++;
     // printf("edit:gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d\n", row->gap_size, row->gap_left, row->gap_right, row->gsize, row->size);
 }
-void deletion(editorRow *row, int position)
+void deletionGapBuffer(editorRow *row, int position)
 {
     // If the point is not the gap check
     // and move the cursor to that point
@@ -227,6 +227,13 @@ void deletion(editorRow *row, int position)
     row->size--;
     row->gap_size++;
     row->gapBuffer[row->gap_left] = '\0';
+}
+void editorRowDelChar(editorRow *row, int at)
+{
+    if (at < DEFPOS_X || at >= row->size)
+        return;
+    deletionGapBuffer(row, at);
+    E.dirtyFlag = 1;
 }
 void openFile(char *filename)
 {
@@ -369,7 +376,7 @@ void editorInsertChar(int c)
     if (E.Cy + E.y_offset == E.numOfRows)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
-    E.Cx++;
+    editorMoveCursor(KEY_RIGHT);
     E.dirtyFlag = 1;
 }
 

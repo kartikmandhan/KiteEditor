@@ -102,3 +102,4 @@ struct editorConfig
 } E;
 #endif // !EDITOR_H
 void setEditorStatus(int status, char *format, ...);
+void editorMoveCursor(int key);
