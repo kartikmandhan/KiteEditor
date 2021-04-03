@@ -27,6 +27,28 @@ void appendRow(vlist *l, char *line, int lineLength)
     p->next = new_node;
     l->tail = new_node;
 }
+void deleteRow(vnode *p)
+{
+    if (p == E.l.head)
+        return;
+    vnode *temp = p->prev;
+    temp->next = p->next;
+    if (p == E.l.tail)
+        E.l.tail = temp;
+    else
+        p->next->prev = temp;
+    free(p->row.chars);
+    free(p);
+    E.numOfRows--;
+}
+void editorRowAppendString(editorRow *row, char *s, int len)
+{
+    row->chars = realloc(row->chars, row->size + len + 1);
+    memcpy(&row->chars[row->size], s, len);
+    row->size += len;
+    row->chars[row->size] = '\0';
+    E.dirtyFlag = 1;
+}
 void editor_init()
 {
     E.Cx = DEFPOS_X;
@@ -355,11 +377,20 @@ void editorDelChar()
 {
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
-    if (E.Cx >= DEFPOS_X)
+    if (E.Cx == DEFPOS_X)
+    {
+        if (E.currentRow->row.size != 0)
+        {
+            editorRowAppendString(&E.currentRow->prev->row, E.currentRow->row.chars, E.currentRow->row.size);
+        }
+        deleteRow(E.currentRow);
+        setEditorStatus(0, "haere%d", E.currentRow);
+    }
+    else if (E.Cx > DEFPOS_X)
     {
         editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
-        editorMoveCursor(KEY_LEFT);
     }
+    editorMoveCursor(KEY_LEFT);
 }
 void read_key()
 {
