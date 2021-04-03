@@ -32,6 +32,34 @@ void appendRow(vlist *l, char *line, int lineLength)
     p->next = new_node;
     l->tail = new_node;
 }
+void deleteRow(vnode *p)
+{
+    if (p == E.l.head)
+        return;
+    vnode *temp = p->prev;
+    temp->next = p->next;
+    if (p == E.l.tail)
+        E.l.tail = temp;
+    else
+        p->next->prev = temp;
+    free(p->row.chars);
+    if (p->row.gapBuffer != NULL)
+    {
+        free(p->row.gapBuffer);
+        p->row.gapBuffer = NULL;
+    }
+    free(p);
+    E.numOfRows--;
+}
+void editorRowAppendString(editorRow *row, char *s, int len)
+{
+    row->chars = realloc(row->chars, row->size + len + 1);
+    memcpy(&row->chars[row->size], s, len);
+    row->size += len;
+    row->gsize += len;
+    row->chars[row->size] = '\0';
+    E.dirtyFlag = 1;
+}
 void editor_init()
 {
     E.Cx = DEFPOS_X;
@@ -235,15 +263,41 @@ void editorRowDelChar(editorRow *row, int at)
     deletionGapBuffer(row, at);
     E.dirtyFlag = 1;
 }
+void singleGapBufferToRow(editorRow *row)
+{
+    memmove(&row->gapBuffer[row->gap_left], &row->gapBuffer[row->gap_right + 1], row->gsize - row->gap_right);
+    // exchanging pointers
+    char *tmp = row->chars;
+    // printf("%s", row->gapBuffer);
+    row->chars = row->gapBuffer;
+    free(tmp);
+    row->gapBuffer = NULL;
+    row->gsize = row->size;
+    row->gap_left = row->gap_right = -1;
+    row->gap_size = 0;
+}
 void editorDelChar()
 {
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
-    if (E.Cx >= DEFPOS_X)
+    if (E.Cx == DEFPOS_X)
+    {
+        if (E.currentRow->row.size != 0)
+        {
+            if (E.currentRow->prev->row.gapBuffer != NULL)
+                singleGapBufferToRow(&E.currentRow->prev->row);
+            if (E.currentRow->row.gapBuffer != NULL)
+                singleGapBufferToRow(&E.currentRow->row);
+
+            editorRowAppendString(&E.currentRow->prev->row, E.currentRow->row.chars, E.currentRow->row.size);
+        }
+        deleteRow(E.currentRow);
+    }
+    else if (E.Cx > DEFPOS_X)
     {
         editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
-        editorMoveCursor(KEY_LEFT);
     }
+    editorMoveCursor(KEY_LEFT);
 }
 void openFile(char *filename)
 {
@@ -323,7 +377,7 @@ void gapBuffertoRows()
             p->row.gapBuffer = NULL;
         }
         p = p->next;
-    } while (p != E.l.tail);
+    } while (p && p != E.l.tail);
 }
 
 char *dataStructureToString(int *totalLength)
@@ -566,7 +620,7 @@ void editorMoveCursor(int key)
         E.Cx = E.currentRow->row.size + 1;
         E.x_offset = 0;
     }
-    setEditorStatus(0, "gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", E.currentRow->row.gap_size, E.currentRow->row.gap_left, E.currentRow->row.gap_right, E.currentRow->row.gsize, E.currentRow->row.size);
+    setEditorStatus(0, "gapBuff=%dgap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", E.currentRow->row.gapBuffer != NULL, E.currentRow->row.gap_size, E.currentRow->row.gap_left, E.currentRow->row.gap_right, E.currentRow->row.gsize, E.currentRow->row.size);
 }
 void read_key()
 {
