@@ -230,10 +230,20 @@ void deletionGapBuffer(editorRow *row, int position)
 }
 void editorRowDelChar(editorRow *row, int at)
 {
-    if (at < DEFPOS_X || at >= row->size)
+    if (at < 0 || at >= row->size)
         return;
     deletionGapBuffer(row, at);
     E.dirtyFlag = 1;
+}
+void editorDelChar()
+{
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+    if (E.Cx >= DEFPOS_X)
+    {
+        editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
+        editorMoveCursor(KEY_LEFT);
+    }
 }
 void openFile(char *filename)
 {
@@ -562,12 +572,18 @@ void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
     // wmove(win[EDIT_WINDOW], 10, 0);
-
+    static int quit_times = KITE_QUIT_TIMES;
     // printw("%c", c);
     wprintw(win[INFO_WINDOW], "%d %d", E.screenCols, E.screenRows);
     switch (c)
     {
     case CTRL_KEY('q'):
+        if (E.dirtyFlag && quit_times > 0)
+        {
+            setEditorStatus(0, "WARNING!!! File has unsaved changes.Press Ctrl-Q %d more times to quit.", quit_times);
+            quit_times--;
+            return;
+        }
         endwin();
         exit(EXIT_SUCCESS);
         break;
@@ -597,6 +613,13 @@ void read_key()
         break;
     case CTRL_KEY('s'):
         saveFile();
+        break;
+    case KEY_DC:
+    case KEY_BS:
+    case KEY_DEL:
+    case KEY_BACKSPACE:
+        editorDelChar();
+        break;
     default:
         editorInsertChar(c);
         break;

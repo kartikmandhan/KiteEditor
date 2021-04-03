@@ -12,7 +12,12 @@
 #include <stdarg.h>
 #define CTRL_KEY(k) ((k)&0x1f)
 #define GAP_LEN 20
-
+#define KEY_BS '\b'
+#define KEY_DEL 127
+#define KEY_CR '\r'
+#define KEY_HT '\t'
+#define KEY_NL '\n'
+#define KITE_QUIT_TIMES 3
 /*
  * This implementation has 3 windows: menu, edit, info.
  *

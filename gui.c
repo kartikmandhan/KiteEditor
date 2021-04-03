@@ -38,6 +38,8 @@ void draw_menu(enum win_type wt)
     offset += 15;
     mvwprintw(win[wt], 1, offset, "  F5 - Exit  ");
     mvwprintw(win[wt], 1, COLS - 20, " made by Kartik ");
+    if (E.dirtyFlag)
+        mvwprintw(win[wt], 3, COLS - 20, "(modified)");
     wattroff(win[wt], MENU_CLR);
 }
 void draw_edit(enum win_type wt)
