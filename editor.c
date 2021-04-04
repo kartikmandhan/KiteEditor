@@ -41,6 +41,25 @@ void deleteRow(vnode *p)
     free(p);
     E.numOfRows--;
 }
+void insertRowAbove(vnode *p, char *line, int lineLength)
+{
+    E.numOfRows++;
+    vnode *new_node = malloc(sizeof(vnode));
+    vnode *beforeP = p->prev;
+    new_node->next = p;
+    new_node->prev = beforeP;
+    p->prev = new_node;
+
+    if (p == E.l.head)
+        E.l.head = new_node;
+    else
+        beforeP->next = new_node;
+    new_node->row.size = lineLength;
+    new_node->row.chars = (char *)malloc(lineLength + 1);
+    memcpy(new_node->row.chars, line, lineLength);
+    new_node->row.chars[lineLength] = '\0';
+    E.currentRow = new_node;
+}
 void editorRowAppendString(editorRow *row, char *s, int len)
 {
     row->chars = realloc(row->chars, row->size + len + 1);
@@ -377,7 +396,7 @@ void editorDelChar()
 {
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
-    if (E.Cx == DEFPOS_X)
+    if (E.Cx + E.x_offset == DEFPOS_X)
     {
         if (E.currentRow->row.size != 0)
         {
@@ -386,11 +405,31 @@ void editorDelChar()
         deleteRow(E.currentRow);
         setEditorStatus(0, "haere%d", E.currentRow);
     }
-    else if (E.Cx > DEFPOS_X)
+    else if (E.Cx + E.x_offset > DEFPOS_X)
     {
         editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
     }
     editorMoveCursor(KEY_LEFT);
+}
+void editorInsertNewline()
+{
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+    if (E.Cx + E.x_offset == DEFPOS_X)
+    {
+        insertRowAbove(E.currentRow, "", 0);
+    }
+    else
+    {
+        // row->size = E.cx;
+        // row->chars[row->size] = '\0';
+        // editorUpdateRow(row);
+    }
+    editorMoveCursor(KEY_DOWN);
+    E.Cx = DEFPOS_X;
+    E.x_offset = 0;
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
 }
 void read_key()
 {
@@ -434,6 +473,9 @@ void read_key()
         }
         break;
     case KEY_ENTER:
+    case KEY_NL:
+        editorInsertNewline();
+        setEditorStatus(0, "new line");
         break;
     case CTRL_KEY('s'):
         saveFile();
