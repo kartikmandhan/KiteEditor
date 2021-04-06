@@ -59,7 +59,7 @@ void draw_info(enum win_type wt)
     int offset = 4;
     char fname[20] = "[No Name]";
     int namelen = strlen(E.fname);
-    int statusLength = strlen(E.statusMessage);
+    // int statusLength = strlen(E.statusMessage);
     if (namelen > 16)
     {
         strncpy(fname, E.fname + namelen - 16, sizeof(char) * 19);
@@ -88,4 +88,39 @@ void draw_info(enum win_type wt)
     if (E.dirtyFlag)
         mvwprintw(win[wt], 3, COLS - 20, "(modified)");
     wattroff(win[wt], MENU_CLR);
+}
+
+void save_file_popup(void)
+{
+    WINDOW *savewin;
+
+    int win_height = 3;
+    int win_width = 42;
+    int offset_y = LINES / 2;
+    int offset_x = COLS / 2;
+
+    savewin = newwin(win_height, win_width,
+                     offset_y - win_height / 2,
+                     offset_x - win_width / 2);
+
+    wattron(savewin, BORDER_CLR);
+    box(savewin, ACS_VLINE, ACS_HLINE);
+    wattroff(savewin, BORDER_CLR);
+    wbkgd(savewin, POPUP_CLR);
+
+    echo();
+
+    mvwaddstr(savewin, 1, 1, " Enter file name: ");
+    wrefresh(savewin);
+    memset(E.fname, '\0', FILENAME_MAX);
+    mvwgetstr(savewin, 1, 19, E.fname);
+
+    flushinp();
+    noecho();
+
+    wclear(savewin);
+    wrefresh(savewin);
+    delwin(savewin);
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
 }

@@ -91,12 +91,14 @@ void editor_init()
     init_gui();
     // wrefresh(win[INFO_WINDOW]);
     // init
+    // E.fname = NULL;
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
 }
 void openFile(char *filename)
 {
     FILE *fp = fopen(filename, "r");
+    // E.fname = (char *)malloc(strlen(filename) + 1);
     strcpy(E.fname, filename);
     if (!fp)
     {
@@ -178,9 +180,12 @@ void saveFile()
 {
     int buflen = 0;
     char *buf = dataStructureToString(&buflen);
+    if (E.newFileflag)
+        save_file_popup();
     FILE *fp = fopen(E.fname, "w");
     if (fp == NULL)
     {
+        setEditorStatus(1, "Unable to open the file");
         return;
     }
     // mvwprintw(win[MENU_WINDOW], 1, 25, "%s %d", buf,buflen);
@@ -507,7 +512,16 @@ int main(int argc, char *argv[])
     initscr();
     editor_init();
     if (argc == 2)
+    {
         openFile(argv[1]);
+        E.newFileflag = 0;
+    }
+    else
+    {
+        E.newFileflag = 1;
+        appendRow(&E.l, "", 0);
+        E.currentRow = E.l.head;
+    }
     // mvprintw(E.screenCols / 2, E.screenRows / 2 - 10, "welcome to my editor");
     while (1)
     {
