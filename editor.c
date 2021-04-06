@@ -462,6 +462,7 @@ void read_key()
         if (E.dirtyFlag && quit_times > 0)
         {
             setEditorStatus(0, "WARNING!!! File has unsaved changes.Press Ctrl-Q %d more times to quit.", quit_times);
+            flash();
             quit_times--;
             return;
         }
@@ -504,7 +505,10 @@ void read_key()
         editorDelChar();
         break;
     default:
-        editorInsertChar(c);
+        if (c < 127 && c >= 32)
+            editorInsertChar(c);
+        else
+            beep();
         break;
     }
     quit_times = KITE_QUIT_TIMES;
