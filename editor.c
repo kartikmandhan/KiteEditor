@@ -72,8 +72,12 @@ void insertRowAbove(vnode *p, char *line, int lineLength)
     new_node->row.chars = (char *)malloc(lineLength + 1);
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
-    if (lineLength == 0)
-        E.currentRow = new_node;
+    E.currentRow = new_node;
+}
+void insertRowBelow(vnode *p, char *line, int lineLength)
+{
+    insertRowAbove(p->next, line, lineLength);
+    E.currentRow = E.currentRow->prev;
 }
 void editorRowAppendString(editorRow *row, char *s, int len)
 {
@@ -329,13 +333,17 @@ void editorInsertNewline()
     {
         insertRowAbove(E.currentRow, "", 0);
     }
+    else if (E.Cx + E.x_offset - DEFPOS_X == E.currentRow->row.size)
+    {
+        insertRowBelow(E.currentRow, "", 0);
+    }
     else
     {
         if (E.currentRow->row.gapBuffer != NULL)
             singleGapBufferToRow(&E.currentRow->row);
         int previousSize = E.currentRow->row.size;
         int newSize = E.Cx + E.x_offset - DEFPOS_X;
-        insertRowAbove(E.currentRow->next, &E.currentRow->row.chars[newSize], previousSize - newSize);
+        insertRowBelow(E.currentRow, &E.currentRow->row.chars[newSize], previousSize - newSize);
         E.currentRow->row.size = newSize;
         E.currentRow->row.chars[E.currentRow->row.size] = '\0';
     }
@@ -351,7 +359,8 @@ void openFile(char *filename)
     strcpy(E.fname, filename);
     if (!fp)
     {
-        setEditorStatus(1, "Unable to open the file");
+        setEditorStatus(1, "Unable to open the file, created a blank file instead");
+        E.newFileflag = 1;
         return;
     }
     char *line = NULL;
@@ -458,7 +467,10 @@ void saveFile()
     int buflen = 0;
     char *buf = dataStructureToString(&buflen);
     if (E.newFileflag)
+    {
         save_file_popup();
+        E.newFileflag = 0;
+    }
     FILE *fp = fopen(E.fname, "w");
     if (fp == NULL)
     {
@@ -739,11 +751,15 @@ int main(int argc, char *argv[])
         openFile(argv[1]);
         E.newFileflag = 0;
     }
-    else
+    else if (argc == 1)
     {
         E.newFileflag = 1;
         appendRow(&E.l, "", 0);
         E.currentRow = E.l.head;
+    }
+    else
+    {
+        exit(0);
     }
     // mvprintw(E.screenCols / 2, E.screenRows / 2 - 10, "welcome to my editor");
     while (1)
