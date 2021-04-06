@@ -49,7 +49,6 @@ void insertRowAbove(vnode *p, char *line, int lineLength)
     new_node->next = p;
     new_node->prev = beforeP;
     p->prev = new_node;
-
     if (p == E.l.head)
         E.l.head = new_node;
     else
@@ -58,7 +57,8 @@ void insertRowAbove(vnode *p, char *line, int lineLength)
     new_node->row.chars = (char *)malloc(lineLength + 1);
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
-    E.currentRow = new_node;
+    if (lineLength == 0)
+        E.currentRow = new_node;
 }
 void editorRowAppendString(editorRow *row, char *s, int len)
 {
@@ -403,7 +403,6 @@ void editorDelChar()
             editorRowAppendString(&E.currentRow->prev->row, E.currentRow->row.chars, E.currentRow->row.size);
         }
         deleteRow(E.currentRow);
-        setEditorStatus(0, "haere%d", E.currentRow);
     }
     else if (E.Cx + E.x_offset > DEFPOS_X)
     {
@@ -413,16 +412,17 @@ void editorDelChar()
 }
 void editorInsertNewline()
 {
-    werase(win[EDIT_WINDOW]);
-    draw_window(EDIT_WINDOW);
     if (E.Cx + E.x_offset == DEFPOS_X)
     {
         insertRowAbove(E.currentRow, "", 0);
     }
     else
     {
-        // row->size = E.cx;
-        // row->chars[row->size] = '\0';
+        int previousSize = E.currentRow->row.size;
+        int newSize = E.Cx + E.x_offset - DEFPOS_X;
+        insertRowAbove(E.currentRow->next, &E.currentRow->row.chars[newSize], previousSize - newSize);
+        E.currentRow->row.size = newSize;
+        E.currentRow->row.chars[E.currentRow->row.size] = '\0';
         // editorUpdateRow(row);
     }
     editorMoveCursor(KEY_DOWN);
@@ -475,7 +475,6 @@ void read_key()
     case KEY_ENTER:
     case KEY_NL:
         editorInsertNewline();
-        setEditorStatus(0, "new line");
         break;
     case CTRL_KEY('s'):
         saveFile();
