@@ -103,6 +103,8 @@ struct editorConfig
     int status;
     char statusMessage[100];
     int dirtyFlag;
+    int newFileflag;
+
     // Cy+y_offset= position of cursor in the screen
 } E;
 #endif // !EDITOR_H
