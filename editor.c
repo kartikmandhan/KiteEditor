@@ -131,6 +131,7 @@ void openFile()
     {
         setEditorStatus(1, "Unable to open the file, created a blank file instead");
         createBlankFile();
+        E.newFileflag = 0;
         return;
     }
 
@@ -533,6 +534,7 @@ void read_key()
             destroyDataStructure();
         open_file_popup();
         openFile();
+        break;
     default:
         if (c < 127 && c >= 32)
             editorInsertChar(c);
