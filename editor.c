@@ -99,15 +99,38 @@ void editor_init()
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
 }
-void openFile(char *filename)
+void destroyDataStructure()
 {
-    FILE *fp = fopen(filename, "r");
+    vnode *p = E.l.head, *temp;
+    while (p)
+    {
+        temp = p;
+        free(temp->row.chars);
+        free(temp);
+        p = p->next;
+    }
+    E.Cx = DEFPOS_X;
+    E.Cy = DEFPOS_Y;
+    E.numOfRows = 0;
+    E.x_offset = 0;
+    E.y_offset = 0;
+    E.dirtyFlag = 0;
+    vlist_init(&E.l);
+}
+void createBlankFile()
+{
+    E.newFileflag = 1;
+    appendRow(&E.l, "", 0);
+    E.currentRow = E.l.head;
+}
+void openFile()
+{
+    FILE *fp = fopen(E.fname, "r");
     // E.fname = (char *)malloc(strlen(filename) + 1);
-    strcpy(E.fname, filename);
     if (!fp)
     {
         setEditorStatus(1, "Unable to open the file, created a blank file instead");
-        E.newFileflag = 1;
+        createBlankFile();
         return;
     }
 
@@ -446,6 +469,7 @@ void editorInsertNewline()
     editorMoveCursor(KEY_DOWN);
     E.Cx = DEFPOS_X;
     E.x_offset = 0;
+    E.dirtyFlag = 1;
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
@@ -504,6 +528,11 @@ void read_key()
     case KEY_BACKSPACE:
         editorDelChar();
         break;
+    case KEY_F(1):
+        if (E.l.head != NULL)
+            destroyDataStructure();
+        open_file_popup();
+        openFile();
     default:
         if (c < 127 && c >= 32)
             editorInsertChar(c);
@@ -530,14 +559,13 @@ int main(int argc, char *argv[])
     editor_init();
     if (argc == 2)
     {
-        openFile(argv[1]);
+        strcpy(E.fname, argv[1]);
+        openFile();
         E.newFileflag = 0;
     }
     else if (argc == 1)
     {
-        E.newFileflag = 1;
-        appendRow(&E.l, "", 0);
-        E.currentRow = E.l.head;
+        createBlankFile();
     }
     else
     {

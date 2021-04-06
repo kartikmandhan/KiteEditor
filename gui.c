@@ -124,3 +124,38 @@ void save_file_popup(void)
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
+void open_file_popup(void)
+{
+    WINDOW *openwin;
+
+    int win_height = 3;
+    int win_width = 42;
+    int offset_y = LINES / 2;
+    int offset_x = COLS / 2;
+
+    openwin = newwin(win_height, win_width,
+                     offset_y - win_height / 2,
+                     offset_x - win_width / 2);
+
+    wattron(openwin, BORDER_CLR);
+    box(openwin, ACS_VLINE, ACS_HLINE);
+    wattroff(openwin, BORDER_CLR);
+    wbkgd(openwin, POPUP_CLR);
+
+    echo();
+
+    mvwaddstr(openwin, 1, 1, " Enter file name: ");
+    wrefresh(openwin);
+
+    memset(E.fname, '\0', FILENAME_MAX);
+    mvwgetstr(openwin, 1, 19, E.fname);
+
+    flushinp();
+    noecho();
+
+    wclear(openwin);
+    wrefresh(openwin);
+    delwin(openwin);
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+}

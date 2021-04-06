@@ -12,4 +12,5 @@ void draw_menu(enum win_type wt);
 void draw_edit(enum win_type wt);
 void draw_info(enum win_type wt);
 void save_file_popup(void);
+void open_file_popup(void);
 #endif // !__GUI_H__
