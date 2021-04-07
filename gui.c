@@ -159,9 +159,8 @@ void open_file_popup(void)
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
-char *search_file_popup(void)
+char *search_file_popup(WINDOW *findwin)
 {
-    WINDOW *findwin;
 
     int win_height = 2;
     int win_width = 42;
@@ -172,8 +171,6 @@ char *search_file_popup(void)
                      offset_y - win_height / 2,
                      offset_x - win_width / 2);
 
-    wattron(findwin, BORDER_CLR);
-    wattroff(findwin, BORDER_CLR);
     wbkgd(findwin, POPUP_CLR);
 
     echo();
@@ -185,11 +182,11 @@ char *search_file_popup(void)
     mvwgetstr(findwin, 1, 10, query);
     setEditorStatus(0, "Searching: %s", query);
     noecho();
-    wclear(findwin);
-    wrefresh(findwin);
-    delwin(findwin);
-    werase(win[INFO_WINDOW]);
-    draw_window(INFO_WINDOW);
+    // wclear(findwin);
+    // wrefresh(findwin);
+    // delwin(findwin);
+    // werase(win[INFO_WINDOW]);
+    // draw_window(INFO_WINDOW);
     if (strlen(query) == 0)
     {
         setEditorStatus(0, "Searching: aborted");

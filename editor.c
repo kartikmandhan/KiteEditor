@@ -95,7 +95,7 @@ void editor_init()
     init_gui();
     // wrefresh(win[INFO_WINDOW]);
     // init
-    // E.fname = NULL;
+    E.query = NULL;
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
 }
@@ -232,6 +232,7 @@ void saveFile()
     free(buf);
     fclose(fp);
     E.dirtyFlag = 0;
+    setEditorStatus(0, "File Saved Successfully");
 }
 void editorRowInsertChar(editorRow *row, int at, int ch)
 {
@@ -475,54 +476,71 @@ void editorInsertNewline()
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
-void search()
+void search(int reset)
 {
-    char *query = search_file_popup();
-    if (query == NULL)
-        return;
-    int i = 0;
+    WINDOW *findwin = NULL;
+    static vnode *p = NULL;
+    static int i = 0, ismatchFound = 0;
+    if (reset == 1)
+    {
+        p = E.l.head;
+        if (E.query != NULL)
+        {
+            free(E.query);
+            E.query = NULL;
+        }
+        i = 0;
+        E.query = (char *)malloc(sizeof(char) * 100);
+        E.query = search_file_popup(findwin);
+        ismatchFound = 0;
+        // empty searchbox
+        if (E.query == NULL)
+            return;
+    }
     int x_off, y_off, queryLen;
-    queryLen = strlen(query);
-    vnode *p = E.l.head;
-    for (; i < E.numOfRows; i++)
+    queryLen = strlen(E.query);
+    for (; i < E.numOfRows; i++, p = p->next)
     {
         // case insensitive search
-        char *match = strcasestr(p->row.chars, query);
+        char *match = strcasestr(p->row.chars, E.query);
         if (match)
         {
+            setEditorStatus(0, "%d %s", i, E.query);
             y_off = i + DEFPOS_Y;
             x_off = match - p->row.chars + DEFPOS_X;
             if (y_off < LIMIT_Y)
             {
                 E.Cy = y_off;
+                E.y_offset = 0;
             }
             else
             {
                 E.Cy = LIMIT_Y;
                 E.y_offset = y_off - LIMIT_Y;
-                werase(win[EDIT_WINDOW]);
-                draw_window(EDIT_WINDOW);
             }
             if (x_off < LIMIT_X)
             {
                 E.Cx = x_off;
+                E.x_offset = 0;
             }
             else
             {
                 E.Cx = LIMIT_X - queryLen;
                 E.x_offset = queryLen + x_off - LIMIT_X;
-                werase(win[EDIT_WINDOW]);
-                draw_window(EDIT_WINDOW);
             }
+            werase(win[EDIT_WINDOW]);
+            draw_window(EDIT_WINDOW);
             E.currentRow = p;
+            p = p->next;
+            i++;
+            ismatchFound = 1;
             break;
         }
-        p = p->next;
     }
     if (i == E.numOfRows)
-        setEditorStatus(0, "Not found");
-
-    free(query);
+        setEditorStatus(0, "Search Completed");
+    if (!ismatchFound)
+        setEditorStatus(0, "Not Found");
 }
 void read_key()
 {
@@ -545,7 +563,13 @@ void read_key()
         exit(EXIT_SUCCESS);
         break;
     case CTRL_KEY('f'):
-        search();
+        search(1);
+        break;
+    case CTRL_KEY('g'):
+        if (E.query != NULL)
+            search(0);
+        else
+            setEditorStatus(0, "Use ctrl+f to find, before using find next");
         break;
     case KEY_DOWN:
     case KEY_UP:
