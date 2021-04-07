@@ -131,9 +131,9 @@ void openFile()
     {
         setEditorStatus(1, "Unable to open the file, created a blank file instead");
         createBlankFile();
-        E.newFileflag = 0;
         return;
     }
+    E.newFileflag = 0;
 
     char *line = NULL;
     // parameter type of lineCapacity
@@ -247,6 +247,7 @@ void editorInsertChar(int c)
 {
     if (iscntrl(c))
     {
+        // flushinp says dont print that character
         flushinp();
         return;
     }
@@ -474,6 +475,55 @@ void editorInsertNewline()
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
+void search()
+{
+    char *query = search_file_popup();
+    if (query == NULL)
+        return;
+    int i = 0;
+    int x_off, y_off, queryLen;
+    queryLen = strlen(query);
+    vnode *p = E.l.head;
+    for (; i < E.numOfRows; i++)
+    {
+        // case insensitive search
+        char *match = strcasestr(p->row.chars, query);
+        if (match)
+        {
+            y_off = i + DEFPOS_Y;
+            x_off = match - p->row.chars + DEFPOS_X;
+            if (y_off < LIMIT_Y)
+            {
+                E.Cy = y_off;
+            }
+            else
+            {
+                E.Cy = LIMIT_Y;
+                E.y_offset = y_off - LIMIT_Y;
+                werase(win[EDIT_WINDOW]);
+                draw_window(EDIT_WINDOW);
+            }
+            if (x_off < LIMIT_X)
+            {
+                E.Cx = x_off;
+            }
+            else
+            {
+                E.Cx = LIMIT_X - queryLen;
+                E.x_offset = queryLen + x_off - LIMIT_X;
+                werase(win[EDIT_WINDOW]);
+                draw_window(EDIT_WINDOW);
+            }
+            E.currentRow = p;
+            break;
+        }
+        p = p->next;
+    }
+    if (i == E.numOfRows)
+        setEditorStatus(0, "Not found");
+
+    free(query);
+}
 void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
@@ -493,6 +543,9 @@ void read_key()
         }
         endwin();
         exit(EXIT_SUCCESS);
+        break;
+    case CTRL_KEY('f'):
+        search();
         break;
     case KEY_DOWN:
     case KEY_UP:
@@ -536,7 +589,7 @@ void read_key()
         openFile();
         break;
     default:
-        if (c < 127 && c >= 32)
+        if (!iscntrl(c) && c < 127 && c >= 32)
             editorInsertChar(c);
         else
             beep();
