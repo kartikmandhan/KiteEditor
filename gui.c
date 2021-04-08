@@ -159,9 +159,8 @@ void open_file_popup(void)
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
-char *search_file_popup(void)
+char *search_file_popup(WINDOW *findwin)
 {
-    WINDOW *findwin;
 
     int win_height = 2;
     int win_width = 42;
@@ -172,8 +171,6 @@ char *search_file_popup(void)
                      offset_y - win_height / 2,
                      offset_x - win_width / 2);
 
-    wattron(findwin, BORDER_CLR);
-    wattroff(findwin, BORDER_CLR);
     wbkgd(findwin, POPUP_CLR);
 
     echo();
