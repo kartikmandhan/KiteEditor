@@ -159,3 +159,40 @@ void open_file_popup(void)
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
 }
+char *search_file_popup(void)
+{
+    WINDOW *findwin;
+
+    int win_height = 2;
+    int win_width = 42;
+    int offset_y = LINES - 3;
+    int offset_x = COLS / 2;
+
+    findwin = newwin(win_height, win_width,
+                     offset_y - win_height / 2,
+                     offset_x - win_width / 2);
+
+    wattron(findwin, BORDER_CLR);
+    wattroff(findwin, BORDER_CLR);
+    wbkgd(findwin, POPUP_CLR);
+
+    echo();
+    flushinp();
+    mvwaddstr(findwin, 1, 1, " Search :");
+    wrefresh(findwin);
+    char *query = (char *)malloc(sizeof(char) * 60);
+    mvwgetstr(findwin, 1, 10, query);
+    setEditorStatus(0, "Searching: %s", query);
+    noecho();
+    wclear(findwin);
+    wrefresh(findwin);
+    delwin(findwin);
+    werase(win[INFO_WINDOW]);
+    draw_window(INFO_WINDOW);
+    if (strlen(query) == 0)
+    {
+        setEditorStatus(0, "Searching: aborted");
+        return NULL;
+    }
+    return query;
+}
