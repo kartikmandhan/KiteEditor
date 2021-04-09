@@ -66,6 +66,7 @@ typedef struct editorRow
 {
     int size;
     char *chars;
+    unsigned char *hl;
 } editorRow;
 typedef struct vnode
 {
@@ -98,6 +99,15 @@ struct editorConfig
     char *query;
     // Cy+y_offset= position of cursor in the screen
 } E;
-#endif // !EDITOR_H
+
+enum editorHighlight
+{
+    HL_NORMAL = 0,
+    HL_NUMBER,
+    HL_SEARCH
+};
 void setEditorStatus(int status, char *format, ...);
 void editorMoveCursor(int key);
+void editorUpdateHighlight(editorRow *row);
+int editorSyntaxToColor(int hl);
+#endif // !EDITOR_H

@@ -10,10 +10,13 @@ void appendRow(vlist *l, char *line, int lineLength)
     E.numOfRows++;
     vnode *new_node = malloc(sizeof(vnode));
     new_node->next = NULL;
+    new_node->row.hl = NULL;
     new_node->row.size = lineLength;
     new_node->row.chars = (char *)malloc(lineLength + 1);
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
+    editorUpdateHighlight(&new_node->row);
+
     if (l->head == NULL)
     {
         new_node->prev = NULL;
@@ -106,6 +109,8 @@ void destroyDataStructure()
     {
         temp = p;
         free(temp->row.chars);
+        if (temp->row.hl)
+            free(temp->row.hl);
         free(temp);
         p = p->next;
     }
@@ -243,6 +248,7 @@ void editorRowInsertChar(editorRow *row, int at, int ch)
     memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
     row->size++;
     row->chars[at] = ch;
+    editorUpdateHighlight(row);
 }
 void editorInsertChar(int c)
 {
@@ -267,7 +273,6 @@ void print_text()
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     // these x and y are used for the position where text will be printed
     int x = 0, y = 0;
-    init_pair(5, COLOR_RED, COLOR_BLUE);
 
     int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
@@ -280,19 +285,22 @@ void print_text()
         {
             p = p->next;
         }
-
+        unsigned char *hl = p->row.hl;
+        // default color indicated by -1
+        // this logic is implemented in order to prevent so many wattron and wattroff
         while (x < p->row.size && x < LIMIT_X + E.x_offset)
         {
             // if (E.l.head->row.size > LIMIT_X)
-            if (isdigit(p->row.chars[x]))
+            int color = editorSyntaxToColor(hl[x]);
+            if (hl[x] == HL_NORMAL)
             {
-                wattron(win[EDIT_WINDOW], COLOR_PAIR(5));
                 waddch(win[EDIT_WINDOW], p->row.chars[x]);
-                wattroff(win[EDIT_WINDOW], COLOR_PAIR(5));
             }
             else
             {
+                wattron(win[EDIT_WINDOW], COLOR_PAIR(color));
                 waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                wattroff(win[EDIT_WINDOW], COLOR_PAIR(color));
             }
             x++;
         }
@@ -491,6 +499,14 @@ void search(int reset)
     WINDOW *findwin = NULL;
     static vnode *p = NULL;
     static int i = 0, ismatchFound = 0;
+    static vnode *saved_hl_line;
+    static char *saved_hl = NULL;
+    if (saved_hl)
+    {
+        memcpy(saved_hl_line->row.hl, saved_hl, saved_hl_line->row.size);
+        free(saved_hl);
+        saved_hl = NULL;
+    }
     if (reset == 1)
     {
         p = E.l.head;
@@ -518,6 +534,10 @@ void search(int reset)
             setEditorStatus(0, "%d %s", i, E.query);
             y_off = i + DEFPOS_Y;
             x_off = match - p->row.chars + DEFPOS_X;
+            saved_hl_line = p;
+            saved_hl = (char *)malloc(sizeof(char) * p->row.size);
+            memcpy(saved_hl, p->row.hl, p->row.size);
+            memset(&p->row.hl[match - p->row.chars], HL_SEARCH, strlen(E.query));
             if (y_off < LIMIT_Y)
             {
                 E.Cy = y_off;
@@ -641,6 +661,31 @@ void setEditorStatus(int status, char *format, ...)
     werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
     va_end(args);
+}
+int editorSyntaxToColor(int hl)
+{
+    switch (hl)
+    {
+    case HL_NUMBER:
+        return 5;
+    case HL_SEARCH:
+        return 6;
+    default:
+        return 2;
+    }
+}
+void editorUpdateHighlight(editorRow *row)
+{
+    row->hl = realloc(row->hl, row->size);
+    memset(row->hl, HL_NORMAL, row->size);
+    int i;
+    for (i = 0; i < row->size; i++)
+    {
+        if (isdigit(row->chars[i]))
+        {
+            row->hl[i] = HL_NUMBER;
+        }
+    }
 }
 int main(int argc, char *argv[])
 {
