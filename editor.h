@@ -52,7 +52,8 @@
 #define KEY_CR '\r'
 #define KEY_HT '\t'
 #define KEY_NL '\n'
-#define HIGHLIGHT_NUMBERS (1 << 0)
+#define HIGHLIGHT_NUMBERS (1 << 0) //0000 0001
+#define HIGHLIGHT_STRINGS (1 << 1) //0000 0010
 #define syntaxDB_SIZE (sizeof(syntaxDB) / sizeof(syntaxDB[0]))
 
 /* Editor windows */
@@ -115,12 +116,13 @@ struct editorConfig
 enum editorHighlight
 {
     HL_NORMAL = 0,
+    HL_STRING,
     HL_NUMBER,
     HL_SEARCH
 };
 void setEditorStatus(int status, char *format, ...);
 void editorMoveCursor(int key);
-void editorUpdateHighlight(editorRow *row);
+void editorRowUpdateHighlight(editorRow *row);
 int editorSyntaxToColor(int hl);
 void selectSyntaxHighlighting();
 #endif // !EDITOR_H
