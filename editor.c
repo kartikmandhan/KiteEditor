@@ -681,6 +681,8 @@ int editorSyntaxToColor(int hl)
         return 6;
     case HL_COMMENT:
         return 9;
+    case HL_KEYWORDS:
+        return 7;
     default:
         return 2;
     }
@@ -703,6 +705,7 @@ void editorRowUpdateHighlight(editorRow *row)
     int insideString = 0;
     char *slcs = E.syntax->singlelineCommentStart;
     int slcLen = slcs ? strlen(slcs) : 0;
+    char **keywords = E.syntax->keywords;
     // we set it to 1 because the starting of line is also considered as seperator
     while (i < row->size)
     {
@@ -760,17 +763,43 @@ void editorRowUpdateHighlight(editorRow *row)
                 continue;
             }
         }
+        if (isprevCharSeperator)
+        {
+            int j = 0;
+            while (keywords[j])
+            {
+                int klen = strlen(keywords[j]);
+                if (!strncmp(&row->chars[i], keywords[j], klen) && is_separator(row->chars[i + klen]))
+                {
+                    memset(&row->hl[i], HL_KEYWORDS, klen);
+                    i += klen;
+                    break;
+                }
+                j++;
+            }
+            if (keywords[j] != NULL)
+            {
+                isprevCharSeperator = 0;
+                continue;
+            }
+        }
         isprevCharSeperator = is_separator(c);
         i++;
     }
 }
 // this null will help us stop iteration in selectSyntaxHighlighting
 char *c_extensions[] = {".c", ".h", ".cpp", NULL};
+char *c_keywords[] = {
+    "switch", "if", "while", "for", "break", "continue", "return", "else",
+    "struct", "union", "typedef", "static", "enum", "class", "case",
+    "int", "long", "double", "float", "char", "unsigned", "signed",
+    "void", NULL};
 // highlighting database
 editorSyntax syntaxDB[] = {
     {"c/cpp",
      c_extensions,
      "//",
+     c_keywords,
      HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
 };
 void selectSyntaxHighlighting()
