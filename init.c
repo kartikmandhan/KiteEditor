@@ -19,6 +19,7 @@ int init_colors()
     init_pair(6, COLOR_GREEN, COLOR_BLUE);
     init_pair(7, COLOR_MAGENTA, COLOR_BLUE);
     init_pair(8, COLOR_WHITE, COLOR_BLUE);
+    init_pair(9, COLOR_YELLOW, COLOR_BLUE);
     if (can_change_color())
     {
         // color green is changed to rgb value as described

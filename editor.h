@@ -90,6 +90,7 @@ typedef struct editorSyntax
 {
     char *filetype;
     char **filematch;
+    char *singlelineCommentStart;
     // flags is a bit field that will contain flags for whether to highlight numbers and whether to highlight strings for that filetype.
     int flags;
 } editorSyntax;
@@ -116,6 +117,7 @@ struct editorConfig
 enum editorHighlight
 {
     HL_NORMAL = 0,
+    HL_COMMENT,
     HL_STRING,
     HL_NUMBER,
     HL_SEARCH
