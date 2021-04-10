@@ -16,7 +16,7 @@ int init_colors()
     // syntax Highlighting colors
     init_pair(5, COLOR_RED, COLOR_BLUE);
     init_pair(6, COLOR_GREEN, COLOR_BLUE);
-    init_pair(7, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(7, COLOR_MAGENTA, COLOR_BLUE);
     init_pair(8, COLOR_WHITE, COLOR_BLUE);
     if (can_change_color())
     {

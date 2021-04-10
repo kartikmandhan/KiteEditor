@@ -20,7 +20,7 @@ void appendRow(vlist *l, char *line, int lineLength)
     new_node->row.gapBuffer = NULL;
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
-    editorUpdateHighlight(&new_node->row);
+    editorRowUpdateHighlight(&new_node->row);
     if (l->head == NULL)
     {
         new_node->prev = NULL;
@@ -256,7 +256,7 @@ void editorRowInsertChar(editorRow *row, int at, int ch)
     row->size++;
     row->gap_size--;
     row->gap_left++;
-    editorUpdateHighlight(row);
+    editorRowUpdateHighlight(row);
     // printf("edit:gap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d\n", row->gap_size, row->gap_left, row->gap_right, row->gsize, row->size);
 }
 void deletionGapBuffer(editorRow *row, int position)
@@ -910,6 +910,8 @@ int editorSyntaxToColor(int hl)
     case HL_NUMBER:
         return 5;
     case HL_SEARCH:
+        return 7;
+    case HL_STRING:
         return 6;
     default:
         return 2;
@@ -921,7 +923,7 @@ int is_separator(int c)
     // so we created a string of all the seperators and if c belongs to any of them, it will return a non NULL value.
     return isspace(c) || strchr(",.()+-/*=~%<>[];", c) != NULL;
 }
-void editorUpdateHighlight(editorRow *row)
+void editorRowUpdateHighlight(editorRow *row)
 {
     int isGapBufferUsed = (row->gapBuffer != NULL);
     row->hl = realloc(row->hl, isGapBufferUsed ? row->gsize : row->size);
@@ -930,6 +932,7 @@ void editorUpdateHighlight(editorRow *row)
         return;
     int i = 0;
     int isprevCharSeperator = 1;
+    int insideString = 0;
     // we set it to 1 because the starting of line is also considered as seperator
     int size = (isGapBufferUsed ? row->gsize : row->size);
     while (i < size)
@@ -937,6 +940,37 @@ void editorUpdateHighlight(editorRow *row)
         char c = isGapBufferUsed ? row->gapBuffer[i] : row->chars[i];
         // setEditorStatus(0, "herer");
         unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+        if (E.syntax->flags & HIGHLIGHT_STRINGS)
+        {
+            if (insideString)
+            {
+                row->hl[i] = HL_STRING;
+                // If the sequence \' or \" occurs in a string, then the escaped quote doesn’t close the string,and is the part of the string
+                if (c == '\\' && i + 1 < row->size)
+                {
+                    row->hl[i + 1] = HL_STRING;
+                    i += 2;
+                    continue;
+                }
+                // when you get closing `"` or `'`
+                if (c == insideString)
+                    insideString = 0;
+                i++;
+                // closing quote is a seperator
+                isprevCharSeperator = 1;
+                continue;
+            }
+            else
+            {
+                if (c == '"' || c == '\'')
+                {
+                    insideString = c;
+                    row->hl[i] = HL_STRING;
+                    i++;
+                    continue;
+                }
+            }
+        }
         if (E.syntax->flags & HIGHLIGHT_NUMBERS)
         {
 
@@ -959,7 +993,7 @@ char *c_extensions[] = {".c", ".h", ".cpp", NULL};
 editorSyntax syntaxDB[] = {
     {"c/cpp",
      c_extensions,
-     HIGHLIGHT_NUMBERS},
+     HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
 };
 void selectSyntaxHighlighting()
 {
@@ -979,7 +1013,13 @@ void selectSyntaxHighlighting()
             if (isExtension && extension && !strcmp(extension, s->filematch[j]))
             {
                 E.syntax = s;
-                // int filerow;
+                // rehighlighting the text which is needed when:
+                // user creates an empty file and then save it with a .c extension
+                vnode *p = E.l.head;
+                for (int k = 0; k < E.numOfRows; p = p->next, k++)
+                {
+                    editorRowUpdateHighlight(&p->row);
+                }
                 return;
             }
             j++;
