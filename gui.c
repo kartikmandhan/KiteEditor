@@ -90,7 +90,7 @@ void draw_info(enum win_type wt)
     if (E.syntax)
         mvwprintw(win[wt], 3, 4, "Filetype:%s", E.syntax->filetype);
     else
-        mvwprintw(win[wt], 3, 4, "Filetype:---");
+        mvwprintw(win[wt], 3, 4, "Filetype:txt");
     wattroff(win[wt], MENU_CLR);
 }
 

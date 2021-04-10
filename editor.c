@@ -1,6 +1,7 @@
 #include "editor.h"
 #include "init.h"
 #include "gui.h"
+#include "syntaxHL.h"
 void vlist_init(vlist *l)
 {
     l->head = l->tail = NULL;
@@ -15,7 +16,7 @@ void appendRow(vlist *l, char *line, int lineLength)
     new_node->row.chars = (char *)malloc(lineLength + 1);
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
-    editorRowUpdateHighlight(&new_node->row);
+    // editorRowUpdateHighlight(&new_node->row);
 
     if (l->head == NULL)
     {
@@ -83,6 +84,7 @@ void editor_init()
     E.x_offset = 0;
     E.y_offset = 0;
     E.dirtyFlag = 0;
+    E.syntaxHighlightFlag = 0;
     vlist_init(&E.l);
     noecho();
     // LINES, COLS gives current rows and cols of the terminal and are defined in Ncurses library
@@ -125,23 +127,21 @@ void destroyDataStructure()
 }
 void createBlankFile()
 {
-    E.newFileflag = 1;
     appendRow(&E.l, "", 0);
     E.currentRow = E.l.head;
 }
 void openFile()
 {
     FILE *fp = fopen(E.fname, "r");
-    selectSyntaxHighlighting();
     // E.fname = (char *)malloc(strlen(filename) + 1);
     if (!fp)
     {
         setEditorStatus(1, "Unable to open the file, created a blank file instead");
         createBlankFile();
+        // selectSyntaxHighlighting();
         return;
     }
     E.newFileflag = 0;
-
     char *line = NULL;
     // parameter type of lineCapacity
     size_t lineCapacity = 0;
@@ -181,8 +181,8 @@ void openFile()
     }
     free(line);
     E.currentRow = E.l.head;
+    // selectSyntaxHighlighting();
     setEditorStatus(0, "File opened Successfully");
-
     fclose(fp);
 }
 char *dataStructureToString(int *totalLength)
@@ -227,7 +227,7 @@ void saveFile()
         setEditorStatus(1, "Unable to open the file");
         return;
     }
-    selectSyntaxHighlighting();
+    // selectSyntaxHighlighting();
     // mvwprintw(win[MENU_WINDOW], 1, 25, "%s %d", buf,buflen);
     wrefresh(win[MENU_WINDOW]);
     int wsize = fwrite(buf, sizeof(char), buflen, fp);
@@ -251,7 +251,8 @@ void editorRowInsertChar(editorRow *row, int at, int ch)
     memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
     row->size++;
     row->chars[at] = ch;
-    editorRowUpdateHighlight(row);
+    if (E.syntaxHighlightFlag)
+        editorRowUpdateHighlight(row);
 }
 void editorInsertChar(int c)
 {
@@ -294,16 +295,23 @@ void print_text()
         while (x < p->row.size && x < LIMIT_X + E.x_offset)
         {
             // if (E.l.head->row.size > LIMIT_X)
-            int color = editorSyntaxToColor(hl[x]);
-            if (hl[x] == HL_NORMAL)
+            if (E.syntaxHighlightFlag && hl)
             {
-                waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                int color = editorSyntaxToColor(hl[x]);
+                if (hl[x] == HL_NORMAL)
+                {
+                    waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                }
+                else
+                {
+                    wattron(win[EDIT_WINDOW], COLOR_PAIR(color));
+                    waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                    wattroff(win[EDIT_WINDOW], COLOR_PAIR(color));
+                }
             }
             else
             {
-                wattron(win[EDIT_WINDOW], COLOR_PAIR(color));
                 waddch(win[EDIT_WINDOW], p->row.chars[x]);
-                wattroff(win[EDIT_WINDOW], COLOR_PAIR(color));
             }
             x++;
         }
@@ -608,6 +616,14 @@ void read_key()
         else
             setEditorStatus(0, "Use ctrl+f to find, before using find next");
         break;
+    case KEY_F(3):
+        if (E.syntaxHighlightFlag)
+            E.syntaxHighlightFlag = 0;
+        else
+        {
+            E.syntaxHighlightFlag = 1;
+            selectSyntaxHighlighting();
+        }
     case KEY_DOWN:
     case KEY_UP:
     case KEY_LEFT:
@@ -680,7 +696,7 @@ int editorSyntaxToColor(int hl)
     case HL_STRING:
         return 6;
     case HL_COMMENT:
-        return 9;
+        return 8;
     case HL_KEYWORDS:
         return 7;
     default:
@@ -788,24 +804,11 @@ void editorRowUpdateHighlight(editorRow *row)
     }
 }
 // this null will help us stop iteration in selectSyntaxHighlighting
-char *c_extensions[] = {".c", ".h", ".cpp", NULL};
-char *c_keywords[] = {
-    "switch", "if", "while", "for", "break", "continue", "return", "else",
-    "struct", "union", "typedef", "static", "enum", "class", "case",
-    "int", "long", "double", "float", "char", "unsigned", "signed",
-    "void", NULL};
-// highlighting database
-editorSyntax syntaxDB[] = {
-    {"c/cpp",
-     c_extensions,
-     "//",
-     c_keywords,
-     HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
-};
+
 void selectSyntaxHighlighting()
 {
     E.syntax = NULL;
-    if (E.newFileflag == 1)
+    if (E.newFileflag)
         return;
     // find the last occurence of '.', extension points to it,if found
     // or else will be NULL
@@ -822,11 +825,13 @@ void selectSyntaxHighlighting()
                 E.syntax = s;
                 // rehighlighting the text which is needed when:
                 // user creates an empty file and then save it with a .c extension
+                // setEditorStatus(0, "here");
                 vnode *p = E.l.head;
-                for (int k = 0; k < E.numOfRows; p = p->next, k++)
-                {
-                    editorRowUpdateHighlight(&p->row);
-                }
+                if (E.syntaxHighlightFlag)
+                    for (int k = 0; p != NULL; p = p->next, k++)
+                    {
+                        editorRowUpdateHighlight(&p->row);
+                    }
                 return;
             }
             j++;
@@ -841,10 +846,10 @@ int main(int argc, char *argv[])
     {
         strcpy(E.fname, argv[1]);
         openFile();
-        E.newFileflag = 0;
     }
     else if (argc == 1)
     {
+        E.newFileflag = 1;
         createBlankFile();
     }
     else

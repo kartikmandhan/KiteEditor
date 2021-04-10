@@ -110,6 +110,7 @@ struct editorConfig
     char statusMessage[100];
     int dirtyFlag;
     int newFileflag;
+    int syntaxHighlightFlag;
     char *query;
     struct editorSyntax *syntax;
     // Cy+y_offset= position of cursor in the screen
