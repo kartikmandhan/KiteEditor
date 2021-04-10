@@ -609,7 +609,7 @@ void print_text()
     // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     // these x and y are used for the position where text will be printed
     int x = 0, y = 0;
-
+    init_pair(5, COLOR_RED, COLOR_BLUE);
     int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
     while (y < E.numOfRows && y < LIMIT_Y)
@@ -627,7 +627,18 @@ void print_text()
             {
                 // if (E.l.head->row.size > LIMIT_X)
                 if (p->row.gapBuffer[x] != '\0')
-                    waddch(win[EDIT_WINDOW], p->row.gapBuffer[x]);
+                {
+                    if (isdigit(p->row.gapBuffer[x]))
+                    {
+                        wattron(win[EDIT_WINDOW], COLOR_PAIR(5));
+                        waddch(win[EDIT_WINDOW], p->row.gapBuffer[x]);
+                        wattroff(win[EDIT_WINDOW], COLOR_PAIR(5));
+                    }
+                    else
+                    {
+                        waddch(win[EDIT_WINDOW], p->row.gapBuffer[x]);
+                    }
+                }
                 x++;
             }
         }
@@ -637,7 +648,16 @@ void print_text()
             while (x < p->row.size && x < LIMIT_X + E.x_offset)
             {
                 // if (E.l.head->row.size > LIMIT_X)
-                waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                if (isdigit(p->row.chars[x]))
+                {
+                    wattron(win[EDIT_WINDOW], COLOR_PAIR(5));
+                    waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                    wattroff(win[EDIT_WINDOW], COLOR_PAIR(5));
+                }
+                else
+                {
+                    waddch(win[EDIT_WINDOW], p->row.chars[x]);
+                }
                 x++;
             }
         }
