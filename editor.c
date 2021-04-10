@@ -113,6 +113,7 @@ void editor_init()
 
     init_gui();
     E.query = NULL;
+    E.syntax = NULL;
     // wrefresh(win[INFO_WINDOW]);
     // init
     raw();
@@ -363,14 +364,16 @@ void search(int reset)
     WINDOW *findwin = NULL;
     static vnode *p = NULL;
     static int i = 0, ismatchFound = 0;
-    static vnode *saved_hl_line;
+    // searched highlighting part 1
+    static vnode *saved_hl_vnode;
     static char *saved_hl = NULL;
     if (saved_hl)
     {
-        memcpy(saved_hl_line->row.hl, saved_hl, saved_hl_line->row.size);
+        memcpy(saved_hl_vnode->row.hl, saved_hl, saved_hl_vnode->row.size);
         free(saved_hl);
         saved_hl = NULL;
     }
+    // searched highlighting part 1 ends
     if (reset == 1)
     {
         p = E.l.head;
@@ -400,10 +403,12 @@ void search(int reset)
             setEditorStatus(0, "%d %s", i, E.query);
             y_off = i + DEFPOS_Y;
             x_off = match - p->row.chars + DEFPOS_X;
-            saved_hl_line = p;
+            // searched highlighting part 2
+            saved_hl_vnode = p;
             saved_hl = (char *)malloc(sizeof(char) * p->row.size);
             memcpy(saved_hl, p->row.hl, p->row.size);
             memset(&p->row.hl[match - p->row.chars], HL_SEARCH, strlen(E.query));
+            // searched highlighting part 2 ends
             if (y_off < LIMIT_Y)
             {
                 E.Cy = y_off;
@@ -515,6 +520,7 @@ void openFile()
     free(line);
     E.currentRow = E.l.head;
     setEditorStatus(0, "File opened Successfully");
+    selectSyntaxHighlighting();
     fclose(fp);
 }
 void setEditorStatus(int status, char *format, ...)
@@ -589,6 +595,7 @@ void saveFile()
         setEditorStatus(1, "Unable to open the file");
         return;
     }
+    selectSyntaxHighlighting();
     // mvwprintw(win[MENU_WINDOW], 1, 25, "%s %d", buf,buflen);
     wrefresh(win[MENU_WINDOW]);
     int wsize = fwrite(buf, sizeof(char), buflen, fp);
@@ -908,33 +915,72 @@ int editorSyntaxToColor(int hl)
         return 2;
     }
 }
+int is_separator(int c)
+{
+    //The strchr() function locates the first occurrence of c (converted to a char) in the string pointed to by s
+    // so we created a string of all the seperators and if c belongs to any of them, it will return a non NULL value.
+    return isspace(c) || strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
 void editorUpdateHighlight(editorRow *row)
 {
-    if (row->gapBuffer == NULL)
+    int isGapBufferUsed = (row->gapBuffer == NULL);
+    row->hl = realloc(row->hl, isGapBufferUsed ? row->gsize : row->size);
+    memset(row->hl, HL_NORMAL, isGapBufferUsed ? row->gsize : row->size);
+    if (E.syntax == NULL)
+        return;
+    int i = 0;
+    int isprevCharSeperator = 1;
+    // we set it to 1 because the starting of line is also considered as seperator
+    while (i < (isGapBufferUsed ? row->gsize : row->size))
     {
-
-        row->hl = realloc(row->hl, row->size);
-        memset(row->hl, HL_NORMAL, row->size);
-        int i;
-        for (i = 0; i < row->size; i++)
+        char c = isGapBufferUsed ? row->gapBuffer[i] : row->chars[i];
+        unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+        if (E.syntax->flags & HIGHLIGHT_NUMBERS)
         {
-            if (isdigit(row->chars[i]))
+
+            //  we now require the previous character to either be a separator, or to also be highlighted with HL_NUMBER.
+            if ((isdigit(c) && (isprevCharSeperator || prev_hl == HL_NUMBER)) || (c == '.' && prev_hl == HL_NUMBER))
             {
                 row->hl[i] = HL_NUMBER;
+                i++;
+                isprevCharSeperator = 0;
+                continue;
             }
         }
+        isprevCharSeperator = is_separator(c);
+        i++;
     }
-    else
+}
+// this null will help us stop iteration in selectSyntaxHighlighting
+char *c_extensions[] = {".c", ".h", ".cpp", NULL};
+// highlighting database
+editorSyntax syntaxDB[] = {
+    {"c/cpp",
+     c_extensions,
+     HIGHLIGHT_NUMBERS},
+};
+void selectSyntaxHighlighting()
+{
+    E.syntax = NULL;
+    if (E.newFileflag == 1)
+        return;
+    // find the last occurence of '.', extension points to it,if found
+    // or else will be NULL
+    char *extension = strrchr(E.fname, '.');
+    for (int i = 0; i < syntaxDB_SIZE; i++)
     {
-        row->hl = realloc(row->hl, row->gsize);
-        memset(row->hl, HL_NORMAL, row->gsize);
-        int i;
-        for (i = 0; i < row->size; i++)
+        editorSyntax *s = &syntaxDB[i];
+        int j = 0;
+        while (s->filematch[j])
         {
-            if (isdigit(row->gapBuffer[i]))
+            int isExtension = (s->filematch[j][0] == '.');
+            if (isExtension && extension && !strcmp(extension, s->filematch[j]))
             {
-                row->hl[i] = HL_NUMBER;
+                E.syntax = s;
+                // int filerow;
+                return;
             }
+            j++;
         }
     }
 }

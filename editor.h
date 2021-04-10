@@ -17,6 +17,8 @@
 #define KEY_CR '\r'
 #define KEY_HT '\t'
 #define KEY_NL '\n'
+#define HIGHLIGHT_NUMBERS (1 << 0)
+#define syntaxDB_SIZE (sizeof(syntaxDB) / sizeof(syntaxDB[0]))
 #define KITE_QUIT_TIMES 3
 /*
  * This implementation has 3 windows: menu, edit, info.
@@ -86,6 +88,14 @@ typedef struct vlist
     vnode *head;
     vnode *tail;
 } vlist;
+/*** data ***/
+typedef struct editorSyntax
+{
+    char *filetype;
+    char **filematch;
+    // flags is a bit field that will contain flags for whether to highlight numbers and whether to highlight strings for that filetype.
+    int flags;
+} editorSyntax;
 void vlist_init(vlist *l);
 void appendRow(vlist *l, char *line, int lineLength);
 struct editorConfig
@@ -106,6 +116,7 @@ struct editorConfig
     int dirtyFlag;
     int newFileflag;
     char *query;
+    struct editorSyntax *syntax;
     // Cy+y_offset= position of cursor in the screen
 } E;
 enum editorHighlight
@@ -118,4 +129,5 @@ void setEditorStatus(int status, char *format, ...);
 void editorMoveCursor(int key);
 void editorUpdateHighlight(editorRow *row);
 int editorSyntaxToColor(int hl);
+void selectSyntaxHighlighting();
 #endif // !EDITOR_H
