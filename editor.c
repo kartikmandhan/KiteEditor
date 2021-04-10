@@ -913,6 +913,8 @@ int editorSyntaxToColor(int hl)
         return 7;
     case HL_STRING:
         return 6;
+    case HL_COMMENT:
+        return 9;
     default:
         return 2;
     }
@@ -933,6 +935,8 @@ void editorRowUpdateHighlight(editorRow *row)
     int i = 0;
     int isprevCharSeperator = 1;
     int insideString = 0;
+    char *slcs = E.syntax->singlelineCommentStart;
+    int slcLen = slcs ? strlen(slcs) : 0;
     // we set it to 1 because the starting of line is also considered as seperator
     int size = (isGapBufferUsed ? row->gsize : row->size);
     while (i < size)
@@ -940,6 +944,14 @@ void editorRowUpdateHighlight(editorRow *row)
         char c = isGapBufferUsed ? row->gapBuffer[i] : row->chars[i];
         // setEditorStatus(0, "herer");
         unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+        if (slcLen && !insideString)
+        {
+            if (!strncmp(&row->chars[i], slcs, slcLen))
+            {
+                memset(&row->hl[i], HL_COMMENT, row->size - i);
+                break;
+            }
+        }
         if (E.syntax->flags & HIGHLIGHT_STRINGS)
         {
             if (insideString)
@@ -993,6 +1005,7 @@ char *c_extensions[] = {".c", ".h", ".cpp", NULL};
 editorSyntax syntaxDB[] = {
     {"c/cpp",
      c_extensions,
+     "//",
      HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
 };
 void selectSyntaxHighlighting()
