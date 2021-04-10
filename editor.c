@@ -334,6 +334,7 @@ void editorDelChar()
         editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
     }
     editorMoveCursor(KEY_LEFT);
+    editorRowUpdateHighlight(&E.currentRow->row);
 }
 void editorInsertNewline()
 {
@@ -354,6 +355,8 @@ void editorInsertNewline()
         insertRowBelow(E.currentRow, &E.currentRow->row.chars[newSize], previousSize - newSize);
         E.currentRow->row.size = newSize;
         E.currentRow->row.chars[E.currentRow->row.size] = '\0';
+        editorRowUpdateHighlight(&E.currentRow->row);
+        editorRowUpdateHighlight(&E.currentRow->next->row);
     }
     editorMoveCursor(KEY_DOWN);
     E.Cx = DEFPOS_X;
