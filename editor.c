@@ -474,6 +474,7 @@ void createBlankFile()
 void openFile()
 {
     FILE *fp = fopen(E.fname, "r");
+    selectSyntaxHighlighting();
     if (!fp)
     {
         setEditorStatus(1, "Unable to open the file, created a blank file instead");
@@ -520,7 +521,6 @@ void openFile()
     free(line);
     E.currentRow = E.l.head;
     setEditorStatus(0, "File opened Successfully");
-    selectSyntaxHighlighting();
     fclose(fp);
 }
 void setEditorStatus(int status, char *format, ...)
@@ -923,7 +923,7 @@ int is_separator(int c)
 }
 void editorUpdateHighlight(editorRow *row)
 {
-    int isGapBufferUsed = (row->gapBuffer == NULL);
+    int isGapBufferUsed = (row->gapBuffer != NULL);
     row->hl = realloc(row->hl, isGapBufferUsed ? row->gsize : row->size);
     memset(row->hl, HL_NORMAL, isGapBufferUsed ? row->gsize : row->size);
     if (E.syntax == NULL)
@@ -931,9 +931,11 @@ void editorUpdateHighlight(editorRow *row)
     int i = 0;
     int isprevCharSeperator = 1;
     // we set it to 1 because the starting of line is also considered as seperator
-    while (i < (isGapBufferUsed ? row->gsize : row->size))
+    int size = (isGapBufferUsed ? row->gsize : row->size);
+    while (i < size)
     {
         char c = isGapBufferUsed ? row->gapBuffer[i] : row->chars[i];
+        // setEditorStatus(0, "herer");
         unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
         if (E.syntax->flags & HIGHLIGHT_NUMBERS)
         {
