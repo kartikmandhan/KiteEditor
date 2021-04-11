@@ -100,6 +100,12 @@ typedef struct editorSyntax
     // flags is a bit field that will contain flags for whether to highlight numbers and whether to highlight strings for that filetype.
     int flags;
 } editorSyntax;
+typedef struct clipboard
+{
+    char *chars;
+    short fullLineCopy;
+    int len;
+} clipboard;
 void vlist_init(vlist *l);
 void appendRow(vlist *l, char *line, int lineLength);
 struct editorConfig
@@ -116,13 +122,14 @@ struct editorConfig
     vnode *currentRow; //to keep track of current row while insertion,deletion,scrolling
     char fname[FILENAME_MAX];
     int status;
-    char statusMessage[100]; //status message displaye in INFO WINDOW
-    int dirtyFlag;           // to give a warning to user before closing modified file
-    int newFileflag;         // to know whether to display saveFile dialogBox
-    int syntaxHighlightFlag; //to toggle ON and OFF syntax highlighting
-    char *query;             // search string
+    char statusMessage[100];   //status message displaye in INFO WINDOW
+    short dirtyFlag;           // to give a warning to user before closing modified file
+    short newFileflag;         // to know whether to display saveFile dialogBox
+    short syntaxHighlightFlag; //to toggle ON and OFF syntax highlighting
+    char *query;               // search string
     struct editorSyntax *syntax;
     fpos_t filePosition; // keeps track of how mush file is read in Data structure
+    clipboard clip;
     // Cy+y_offset= position of cursor in the screen
 } E;
 enum editorHighlight

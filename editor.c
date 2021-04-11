@@ -116,6 +116,9 @@ void editor_init()
     init_gui();
     E.query = NULL;
     E.syntax = NULL;
+    E.clip.chars = NULL;
+    E.clip.fullLineCopy = 0;
+    E.clip.len = 0;
     // wrefresh(win[INFO_WINDOW]);
     // init
     raw();
@@ -919,6 +922,62 @@ void editorMoveCursor(int key)
     }
     setEditorStatus(0, "gapBuff=%dgap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", E.currentRow->row.gapBuffer != NULL, E.currentRow->row.gap_size, E.currentRow->row.gap_left, E.currentRow->row.gap_right, E.currentRow->row.gsize, E.currentRow->row.size);
 }
+int is_separator(int c)
+{
+    //The strchr() function locates the first occurrence of c (converted to a char) in the string pointed to by s
+    // so we created a string of all the seperators and if c belongs to any of them, it will return a non NULL value.
+    return isspace(c) || strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
+
+void copyLine()
+{
+    if (E.currentRow->row.gapBuffer != NULL)
+        singleGapBufferToRow(&E.currentRow->row);
+    E.clip.chars = E.currentRow->row.chars;
+    E.clip.len = E.currentRow->row.size;
+    E.clip.fullLineCopy = 1;
+}
+void copyWord()
+{
+    if (E.clip.fullLineCopy == 0 && E.clip.chars)
+    {
+        // free previously allocated memory
+        free(E.clip.chars);
+        E.clip.chars = NULL;
+    }
+    setEditorStatus(0, "here");
+    if (E.currentRow->row.gapBuffer != NULL)
+        singleGapBufferToRow(&E.currentRow->row);
+    E.clip.fullLineCopy = 0;
+    char *temp = E.currentRow->row.chars;
+    int i, x = E.Cx + E.x_offset - DEFPOS_X, size = 0;
+    for (i = x; !is_separator(temp[i]); i++)
+        size++;
+    E.clip.chars = (char *)malloc(sizeof(char) * (size + 1));
+    memcpy(E.clip.chars, &temp[x], size);
+    E.clip.chars[size] = '\0';
+    setEditorStatus(0, "%s", E.clip.chars);
+}
+void pasteLine()
+{
+    if (E.clip.fullLineCopy)
+    {
+        insertRowAbove(E.currentRow, E.clip.chars, E.clip.len);
+        editorMoveCursor(KEY_DOWN);
+    }
+    else
+    {
+        int i = 0;
+        while (E.clip.chars[i] != '\0')
+        {
+            editorInsertChar(E.clip.chars[i]);
+            i++;
+        }
+    }
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+    E.dirtyFlag = 1;
+}
 void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
@@ -961,6 +1020,17 @@ void read_key()
     case KEY_LEFT:
     case KEY_RIGHT:
         editorMoveCursor(c);
+        break;
+    case CTRL_KEY('c'):
+        if (E.Cx + E.x_offset - 1 == E.currentRow->row.size)
+        {
+            copyLine();
+        }
+        else
+            copyWord();
+        break;
+    case CTRL_KEY('v'):
+        pasteLine();
         break;
     case KEY_HOME:
         for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
@@ -1023,12 +1093,6 @@ int editorSyntaxToColor(int hl)
     default:
         return 2;
     }
-}
-int is_separator(int c)
-{
-    //The strchr() function locates the first occurrence of c (converted to a char) in the string pointed to by s
-    // so we created a string of all the seperators and if c belongs to any of them, it will return a non NULL value.
-    return isspace(c) || strchr(",.()+-/*=~%<>[];", c) != NULL;
 }
 void editorRowUpdateHighlight(editorRow *row)
 {
