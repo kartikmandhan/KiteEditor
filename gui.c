@@ -49,10 +49,10 @@ void draw_info(enum win_type wt)
     wbkgd(win[wt], MENU_CLR);
     wattron(win[wt], COLOR_PAIR(2));
     // wattron(win[wt], A_REVERSE);
-    mvwprintw(win[INFO_WINDOW], 0, COLS / 2 - 16,
-              " y: %3d, x: %3d, yo: %4d, xo: %4d ",
+    mvwprintw(win[INFO_WINDOW], 0, COLS / 2 - 20,
+              " y: %3d, x: %3d, yo: %4d, xo: %4d , LN: %4d ",
               E.Cy, E.Cx,
-              E.y_offset, E.x_offset);
+              E.y_offset, E.x_offset, (E.Cy + E.y_offset));
     // wattroff(win[wt], A_REVERSE);
     wattroff(win[wt], COLOR_PAIR(2));
     wattron(win[wt], MENU_CLR);

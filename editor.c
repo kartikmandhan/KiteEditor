@@ -132,6 +132,10 @@ void createBlankFile()
 }
 void allocateMoreRows(FILE *fp, int totalCount)
 {
+    if (fp == NULL)
+    {
+        fp = fopen(E.fname, "r");
+    }
     char *line = NULL;
     int count = 0;
     size_t lineCapacity = 0;
@@ -171,6 +175,7 @@ void allocateMoreRows(FILE *fp, int totalCount)
     fgetpos(fp, &E.filePosition);
     // printf("filepositon:%lld\n", t);
     free(line);
+    fclose(fp);
 }
 void openFile()
 {
@@ -188,7 +193,6 @@ void openFile()
     E.currentRow = E.l.head;
     // selectSyntaxHighlighting();
     setEditorStatus(0, "File opened Successfully");
-    fclose(fp);
 }
 char *dataStructureToString(int *totalLength)
 {
@@ -248,6 +252,12 @@ void saveFile()
 }
 void saveFileReadInChunk()
 {
+    // A short Optimization
+    if (E.dirtyFlag == 0)
+    {
+        setEditorStatus(0, "File Saved Successfully");
+        return;
+    }
     FILE *fPtr;
     FILE *fTemp;
     char *buffer = NULL;
@@ -392,8 +402,12 @@ void editorRefresh()
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
-
     wrefresh(win[INFO_WINDOW]);
+    if (E.numOfRows - (E.Cy + E.y_offset) < 10)
+    {
+        allocateMoreRows(NULL, 10);
+        setEditorStatus(0, "here %d %d", E.numOfRows, E.numOfRows - (E.Cy + E.y_offset));
+    }
 }
 void editorMoveCursor(int key)
 {
@@ -534,7 +548,8 @@ void editorDelChar()
         editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
     }
     editorMoveCursor(KEY_LEFT);
-    editorRowUpdateHighlight(&E.currentRow->row);
+    if (E.syntaxHighlightFlag)
+        editorRowUpdateHighlight(&E.currentRow->row);
 }
 void editorInsertNewline()
 {
@@ -554,8 +569,11 @@ void editorInsertNewline()
         insertRowBelow(E.currentRow, &E.currentRow->row.chars[newSize], previousSize - newSize);
         E.currentRow->row.size = newSize;
         E.currentRow->row.chars[E.currentRow->row.size] = '\0';
-        editorRowUpdateHighlight(&E.currentRow->row);
-        editorRowUpdateHighlight(&E.currentRow->next->row);
+        if (E.syntaxHighlightFlag)
+        {
+            editorRowUpdateHighlight(&E.currentRow->row);
+            editorRowUpdateHighlight(&E.currentRow->next->row);
+        }
     }
     editorMoveCursor(KEY_DOWN);
     E.Cx = DEFPOS_X;
