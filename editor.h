@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #define CTRL_KEY(k) ((k)&0x1f)
 #define KITE_QUIT_TIMES 3
+#define CHUNK_SIZE 100 //number of rows to be loaded
 /*
  * This implementation has 3 windows: menu, edit, info.
  *
@@ -100,19 +101,20 @@ struct editorConfig
     int Cx; // x position of edit window(screen)
     int Cy; // y position of edit window(screen)
     char current_theme;
-    int numOfRows;
-    int x_offset;
-    int y_offset;
+    int numOfRows; // number of Rows loaded in Data Structure
+    int x_offset;  // displacement of scrollposition of x-axis
+    int y_offset;  // displacement of scrollposition of y-axis
     vlist l;
-    vnode *currentRow;
+    vnode *currentRow; //to keep track of current row while insertion,deletion,scrolling
     char fname[FILENAME_MAX];
     int status;
-    char statusMessage[100];
-    int dirtyFlag;
-    int newFileflag;
-    int syntaxHighlightFlag;
-    char *query;
+    char statusMessage[100]; //status message displaye in INFO WINDOW
+    int dirtyFlag;           // to give a warning to user before closing modified file
+    int newFileflag;         // to know whether to display saveFile dialogBox
+    int syntaxHighlightFlag; //to toggle ON and OFF syntax highlighting
+    char *query;             // search string
     struct editorSyntax *syntax;
+    fpos_t filePosition; // keeps track of how mush file is read in Data structure
     // Cy+y_offset= position of cursor in the screen
 } E;
 
