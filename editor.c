@@ -334,7 +334,8 @@ void editorDelChar()
         editorRowDelChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X - 1);
     }
     editorMoveCursor(KEY_LEFT);
-    editorRowUpdateHighlight(&E.currentRow->row);
+    if (E.syntaxHighlightFlag)
+        editorRowUpdateHighlight(&E.currentRow->row);
 }
 void editorInsertNewline()
 {
@@ -355,8 +356,12 @@ void editorInsertNewline()
         insertRowBelow(E.currentRow, &E.currentRow->row.chars[newSize], previousSize - newSize);
         E.currentRow->row.size = newSize;
         E.currentRow->row.chars[E.currentRow->row.size] = '\0';
-        editorRowUpdateHighlight(&E.currentRow->row);
-        editorRowUpdateHighlight(&E.currentRow->next->row);
+        if (E.syntaxHighlightFlag)
+        {
+
+            editorRowUpdateHighlight(&E.currentRow->row);
+            editorRowUpdateHighlight(&E.currentRow->next->row);
+        }
     }
     editorMoveCursor(KEY_DOWN);
     E.Cx = DEFPOS_X;
@@ -476,24 +481,22 @@ void createBlankFile()
     appendRow(&E.l, "", 0);
     E.currentRow = E.l.head;
 }
-void openFile()
+void allocateMoreRows(FILE *fp, int totalCount)
 {
-    FILE *fp = fopen(E.fname, "r");
-    if (!fp)
+    if (fp == NULL)
     {
-        setEditorStatus(1, "Unable to open the file, created a blank file instead");
-        createBlankFile();
-        // selectSyntaxHighlighting();
-        return;
+        fp = fopen(E.fname, "r");
     }
     char *line = NULL;
-    // parameter type of lineCapacity
+    int count = 0;
     size_t lineCapacity = 0;
     // return type of getline
     ssize_t lineLength;
 
+    fsetpos(fp, &E.filePosition);
     // if (lineLength != -1)
-    while ((lineLength = getline(&line, &lineCapacity, fp)) != -1)
+    // I HAVE USED GETLINE INSTEAD OF FGETS, SINCE WE DONT KNOW THE SIZE OF LINE BEFOREHAND
+    while (count < totalCount && (lineLength = getline(&line, &lineCapacity, fp)) != -1)
     {
         while (lineLength > 0 && (line[lineLength - 1] == '\n' ||
                                   line[lineLength - 1] == '\r'))
@@ -508,26 +511,34 @@ void openFile()
                                          (lineLength + KITE_TABSIZE + 1));
                 memmove(&line[i + KITE_TABSIZE], &line[i + 1],
                         sizeof(char) * (lineLength - i + 1));
-
                 for (int j = 0; j < KITE_TABSIZE; j++)
                     line[i + j] = ' ';
-
                 i += KITE_TABSIZE - 1;
                 lineLength += KITE_TABSIZE - 1;
             }
         }
         appendRow(&E.l, line, lineLength);
-        // E.row.size = lineLength;
-        // E.row.chars = (char *)malloc(lineLength + 1);
-        // memcpy(E.row.chars, line, lineLength);
-        // E.row.chars[lineLength] = '\0';
-        // E.numOfRows = 1;
+        count++;
     }
+    fgetpos(fp, &E.filePosition);
     free(line);
+    fclose(fp);
+}
+void openFile()
+{
+    FILE *fp = fopen(E.fname, "r");
+    if (!fp)
+    {
+        setEditorStatus(1, "Unable to open the file, created a blank file instead");
+        createBlankFile();
+        // selectSyntaxHighlighting();
+        return;
+    }
+    E.newFileflag = 0;
+    allocateMoreRows(fp, CHUNK_SIZE);
     E.currentRow = E.l.head;
     // selectSyntaxHighlighting();
     setEditorStatus(0, "File opened Successfully");
-    fclose(fp);
 }
 void setEditorStatus(int status, char *format, ...)
 {
@@ -615,7 +626,65 @@ void saveFile()
     fclose(fp);
     E.dirtyFlag = 0;
 }
-
+void saveFileReadInChunk()
+{
+    // A short Optimization
+    if (E.dirtyFlag == 0)
+    {
+        setEditorStatus(0, "File Saved Successfully");
+        return;
+    }
+    FILE *fPtr;
+    FILE *fTemp;
+    char *buffer = NULL;
+    int buflen = 0;
+    if (E.newFileflag)
+    {
+        save_file_popup();
+        E.newFileflag = 0;
+    }
+    //  Open all required files
+    fPtr = fopen(E.fname, "r");
+    // creating an hidden file ,since it starts with a '.'
+    fTemp = fopen(".replace.tmp", "w");
+    if (fPtr == NULL || fTemp == NULL)
+    {
+        // Unable to open file hence exit
+        setEditorStatus(1, "Unable to open the file");
+        printf("\nUnable to open file.\n");
+        printf("Please check whether file exists and you have read/write privilege.\n");
+        return;
+    }
+    char *buf = dataStructureToString(&buflen);
+    mvwprintw(win[MENU_WINDOW], 1, 25, "%d", buflen);
+    wrefresh(win[MENU_WINDOW]);
+    int wsize = fwrite(buf, sizeof(char), buflen, fTemp);
+    if (wsize != buflen)
+    {
+        free(buf);
+        printf("error\n");
+        fclose(fTemp);
+    }
+    free(buf);
+    //     Read line from source file and write to destination
+    // file after writing the datastructure in the file
+    size_t lineCapacity2 = 0;
+    fsetpos(fPtr, &E.filePosition);
+    while ((getline(&buffer, &lineCapacity2, fPtr)) != -1)
+    {
+        fputs(buffer, fTemp);
+    }
+    free(buffer);
+    // Close all files to release resource
+    fclose(fPtr);
+    fclose(fTemp);
+    //  Delete original source file
+    remove(E.fname);
+    //  Rename temporary file as original file
+    rename(".replace.tmp", E.fname);
+    E.dirtyFlag = 0;
+    setEditorStatus(0, "File Saved Successfully");
+}
 void editorInsertChar(int c)
 {
     if (iscntrl(c))
@@ -728,8 +797,12 @@ void editorRefresh()
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
-
     wrefresh(win[INFO_WINDOW]);
+    if (E.numOfRows - (E.Cy + E.y_offset) < 10)
+    {
+        allocateMoreRows(NULL, 10);
+        setEditorStatus(0, "here %d %d", E.numOfRows, E.numOfRows - (E.Cy + E.y_offset));
+    }
 }
 void editorMoveCursor(int key)
 {
@@ -910,7 +983,8 @@ void read_key()
         editorInsertNewline();
         break;
     case CTRL_KEY('s'):
-        saveFile();
+        // saveFile();
+        saveFileReadInChunk();
         break;
     case KEY_DC:
     case KEY_BS:
