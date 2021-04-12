@@ -1,4 +1,5 @@
 #include "editor.h"
+#include <assert.h>
 #include "init.h"
 #include "gui.h"
 #include "syntaxHL.h"
@@ -65,8 +66,13 @@ void insertRowAbove(vnode *p, char *line, int lineLength)
 }
 void insertRowBelow(vnode *p, char *line, int lineLength)
 {
-    insertRowAbove(p->next, line, lineLength);
-    E.currentRow = E.currentRow->prev;
+    if (p->next)
+    {
+        insertRowAbove(p->next, line, lineLength);
+        E.currentRow = E.currentRow->prev;
+    }
+    else
+        appendRow(&E.l, "", 0);
 }
 void editorRowAppendString(editorRow *row, char *s, int len)
 {
@@ -350,15 +356,17 @@ void print_text()
 
     int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
-    while (y < E.numOfRows && y < LIMIT_Y)
+    for (int i = 0; i < file_rowOffset; i++)
+    {
+        p = p->next;
+    }
+    while (p && y < E.numOfRows && y < LIMIT_Y)
     {
         wmove(win[EDIT_WINDOW], y + 1, 1);
         x = E.x_offset;
-
-        while (file_rowOffset-- > 0)
-        {
-            p = p->next;
-        }
+        mvwprintw(win[MENU_WINDOW], 0, 0, "%d", file_rowOffset);
+        wrefresh(win[MENU_WINDOW]);
+        // assert(p != NULL);
         unsigned char *hl = p->row.hl;
         // default color indicated by -1
         // this logic is implemented in order to prevent so many wattron and wattroff
@@ -502,7 +510,7 @@ void editorMoveCursor(int key)
         break;
     case KEY_DOWN:
 
-        if (E.Cy < LIMIT_Y && E.Cy < E.numOfRows)
+        if (E.Cy < LIMIT_Y && E.Cy + E.y_offset < E.numOfRows)
         {
             E.currentRow = E.currentRow->next;
 
@@ -563,6 +571,7 @@ void editorInsertNewline()
     else if (E.Cx + E.x_offset - DEFPOS_X == E.currentRow->row.size)
     {
         insertRowBelow(E.currentRow, "", 0);
+        // fprintf(stderr, "CHECKPOINT REACHED @  %s:%i\n", __FILE__, __LINE__);
         // since we are passing a 0 length row we need to adjust the curentRow pointer
     }
     else
