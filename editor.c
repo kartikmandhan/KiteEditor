@@ -79,8 +79,13 @@ void insertRowAbove(vnode *p, char *line, int lineLength)
 }
 void insertRowBelow(vnode *p, char *line, int lineLength)
 {
-    insertRowAbove(p->next, line, lineLength);
-    E.currentRow = E.currentRow->prev;
+    if (p->next)
+    {
+        insertRowAbove(p->next, line, lineLength);
+        E.currentRow = E.currentRow->prev;
+    }
+    else
+        appendRow(&E.l, "", 0);
 }
 void editorRowAppendString(editorRow *row, char *s, int len)
 {
@@ -732,15 +737,14 @@ void print_text()
     int x = 0, y = 0;
     int file_rowOffset = E.y_offset;
     vnode *p = E.l.head;
-    while (y < E.numOfRows && y < LIMIT_Y)
+    for (int i = 0; i < file_rowOffset; i++)
+    {
+        p = p->next;
+    }
+    while (p && y < E.numOfRows && y < LIMIT_Y)
     {
         wmove(win[EDIT_WINDOW], y + 1, 1);
         x = E.x_offset;
-
-        while (file_rowOffset-- > 0)
-        {
-            p = p->next;
-        }
         unsigned char *hl = p->row.hl;
         if (p->row.gapBuffer != NULL)
         {
@@ -917,7 +921,7 @@ void editorMoveCursor(int key)
         break;
     case KEY_DOWN:
 
-        if (E.Cy < LIMIT_Y && E.Cy < E.numOfRows)
+        if (E.Cy < LIMIT_Y && E.Cy + E.y_offset < E.numOfRows)
         {
             E.currentRow = E.currentRow->next;
 
@@ -940,7 +944,8 @@ void editorMoveCursor(int key)
         E.Cx = E.currentRow->row.size + 1;
         E.x_offset = 0;
     }
-    // setEditorStatus(0, "gapBuff=%dgap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", E.currentRow->row.gapBuffer != NULL, E.currentRow->row.gap_size, E.currentRow->row.gap_left, E.currentRow->row.gap_right, E.currentRow->row.gsize, E.currentRow->row.size);
+    // fprintf(stderr, "CHECKPOINT REACHED @ %s:%i\n", __FILE__, __LINE__);
+    setEditorStatus(0, "gapBuff=%dgap->size=%d gap->left=%d gap->right=%d gsize=%d row->size=%d", E.currentRow->row.gapBuffer != NULL, E.currentRow->row.gap_size, E.currentRow->row.gap_left, E.currentRow->row.gap_right, E.currentRow->row.gsize, E.currentRow->row.size);
 }
 int is_separator(int c)
 {
