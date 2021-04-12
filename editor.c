@@ -137,6 +137,7 @@ void createBlankFile()
 {
     appendRow(&E.l, "", 0);
     E.currentRow = E.l.head;
+    E.newFileflag = 1;
 }
 void allocateMoreRows(FILE *fp, int totalCount)
 {
@@ -232,7 +233,7 @@ void saveFile()
 {
     int buflen = 0;
     char *buf = dataStructureToString(&buflen);
-    if (E.newFileflag)
+    if (E.newFileflag == 2)
     {
         save_file_popup();
         E.newFileflag = 0;
@@ -270,13 +271,14 @@ void saveFileReadInChunk()
     FILE *fTemp;
     char *buffer = NULL;
     int buflen = 0;
-    if (E.newFileflag)
+    if (E.newFileflag == 2)
     {
         save_file_popup();
         E.newFileflag = 0;
     }
     //  Open all required files
-    fPtr = fopen(E.fname, "r");
+    // w+ mode creates the file if it is not present, which is required when someone creates an empty file
+    fPtr = fopen(E.fname, "w+");
     // creating an hidden file ,since it starts with a '.'
     fTemp = fopen(".replace.tmp", "w");
     if (fPtr == NULL || fTemp == NULL)
@@ -285,6 +287,7 @@ void saveFileReadInChunk()
         setEditorStatus(1, "Unable to open the file");
         printf("\nUnable to open file.\n");
         printf("Please check whether file exists and you have read/write privilege.\n");
+        remove(".replace.tmp");
         return;
     }
     char *buf = dataStructureToString(&buflen);
@@ -296,9 +299,24 @@ void saveFileReadInChunk()
         fclose(fTemp);
     }
     free(buf);
+    // this is important to remember the position, as this prevents a bug which is caused when
+    // the data structure wirtten to file exceeds the filePosition
+    // Consider an example
+    // bible.txt contains 100 lines out of which allocateMoreRows allocated 10 lines and set the E.filePosition to 55
+    // now we write some content in text editor and save, which required 15 lines of space(from data structure) and got stored in bible.txt
+    // and then remaining lines directly picked from file,but the E.filePosition is still pointing to 55
+    // Now when allocateMoreRows is called, it starts alllocating data from 55 position in file, which will repeat the 5 lines of data(15-10) and then allocate the remaining lines
+    // since filePosition wasnt modified in SaveFile, hence causes a bug
+    // Hence we take the filePosition after DS has been written in file, in endOfDSInreplaceFile variable
+    // and at the End of this function modify FilePosition to let say 75( i.e. end of 15 lines,written by DS in .replace.temp file)
+    // So that now allocateMoreRows() will allocate rows from the correct Position and wont duplicate data
+    fpos_t endOfDSInreplaceFile;
+    fgetpos(fTemp, &endOfDSInreplaceFile);
     //     Read line from source file and write to destination
     // file after writing the datastructure in the file
     size_t lineCapacity2 = 0;
+    // this is the position till which we have loaded in DS
+    // hence after this fileLocation we have to copy data from the file itself.
     fsetpos(fPtr, &E.filePosition);
     while ((getline(&buffer, &lineCapacity2, fPtr)) != -1)
     {
@@ -314,6 +332,7 @@ void saveFileReadInChunk()
     rename(".replace.tmp", E.fname);
     E.dirtyFlag = 0;
     setEditorStatus(0, "File Saved Successfully");
+    E.filePosition = endOfDSInreplaceFile;
 }
 void editorRowInsertChar(editorRow *row, int at, int ch)
 {
@@ -408,11 +427,12 @@ void editorRefresh()
     werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
     wrefresh(win[INFO_WINDOW]);
-    if (E.numOfRows - (E.Cy + E.y_offset) < 10)
-    {
-        allocateMoreRows(NULL, 10);
-        setEditorStatus(0, "here %d %d", E.numOfRows, E.numOfRows - (E.Cy + E.y_offset));
-    }
+    if (!E.newFileflag) //either 1 or 2 in both cases it should call this
+        if (E.numOfRows - (E.Cy + E.y_offset) < 10)
+        {
+            setEditorStatus(0, "here %d %d", E.numOfRows, E.numOfRows - (E.Cy + E.y_offset));
+            allocateMoreRows(NULL, 10);
+        }
 }
 void editorMoveCursor(int key)
 {
@@ -538,6 +558,8 @@ void editorRowDelChar(editorRow *row, int at)
 }
 void editorDelChar()
 {
+    if (E.Cy + E.y_offset == DEFPOS_Y)
+        return;
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
     if (E.Cx + E.x_offset == DEFPOS_X)
@@ -862,7 +884,7 @@ void editorRowUpdateHighlight(editorRow *row)
     int isprevCharSeperator = 1;
     int insideString = 0;
     char *slcs = E.syntax->singlelineCommentStart;
-    int slcLen = slcs ? strlen(slcs) : 0;
+    int slcLen = slcs ? strlen(slcs) : 0; // for C it is 2 i.e '//'
     char **keywords = E.syntax->keywords;
     // we set it to 1 because the starting of line is also considered as seperator
     while (i < row->size)
@@ -950,7 +972,7 @@ void editorRowUpdateHighlight(editorRow *row)
 void selectSyntaxHighlighting()
 {
     E.syntax = NULL;
-    if (E.newFileflag)
+    if (E.newFileflag == 2)
         return;
     // find the last occurence of '.', extension points to it,if found
     // or else will be NULL
@@ -991,8 +1013,8 @@ int main(int argc, char *argv[])
     }
     else if (argc == 1)
     {
-        E.newFileflag = 1;
         createBlankFile();
+        E.newFileflag = 2;
     }
     else
     {
