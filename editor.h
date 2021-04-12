@@ -122,9 +122,12 @@ struct editorConfig
     vnode *currentRow; //to keep track of current row while insertion,deletion,scrolling
     char fname[FILENAME_MAX];
     int status;
-    char statusMessage[100];   //status message displaye in INFO WINDOW
-    short dirtyFlag;           // to give a warning to user before closing modified file
-    short newFileflag;         // to know whether to display saveFile dialogBox
+    char statusMessage[100]; //status message displaye in INFO WINDOW
+    short dirtyFlag;         // to give a warning to user before closing modified file
+    short newFileflag;       // to know whether to display saveFile dialogBox
+    // newFileFlag=2 : file has no name yet, i.e. ./editor
+    // newFileFlag=1 : file has a name but is new, ./editor file.txt ,, file.txt doesnt exist, empty buffer created but now on saving it will be saved as file.txt
+    // newFileflag=0: file already exists
     short syntaxHighlightFlag; //to toggle ON and OFF syntax highlighting
     char *query;               // search string
     struct editorSyntax *syntax;
