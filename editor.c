@@ -1,5 +1,4 @@
 #include "editor.h"
-#include <assert.h>
 #include "init.h"
 #include "gui.h"
 #include "syntaxHL.h"
@@ -289,8 +288,6 @@ void saveFileReadInChunk()
         return;
     }
     char *buf = dataStructureToString(&buflen);
-    mvwprintw(win[MENU_WINDOW], 1, 25, "%d", buflen);
-    wrefresh(win[MENU_WINDOW]);
     int wsize = fwrite(buf, sizeof(char), buflen, fTemp);
     if (wsize != buflen)
     {
@@ -364,9 +361,6 @@ void print_text()
     {
         wmove(win[EDIT_WINDOW], y + 1, 1);
         x = E.x_offset;
-        mvwprintw(win[MENU_WINDOW], 0, 0, "%d", file_rowOffset);
-        wrefresh(win[MENU_WINDOW]);
-        // assert(p != NULL);
         unsigned char *hl = p->row.hl;
         // default color indicated by -1
         // this logic is implemented in order to prevent so many wattron and wattroff
