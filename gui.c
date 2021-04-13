@@ -212,3 +212,96 @@ char *search_file_popup(WINDOW *findwin)
     }
     return query;
 }
+int change_theme_popup(void)
+{
+    WINDOW *theme_win;
+
+    int win_height = 7;
+    int win_width = 15;
+    int line = 1;
+    int offset_y = LINES / 2;
+    int offset_x = COLS / 2;
+
+    theme_win = newpad(win_height, win_width);
+    wattron(theme_win, BORDER_CLR);
+    box(theme_win, ACS_VLINE, ACS_HLINE);
+    wattroff(theme_win, BORDER_CLR);
+    wbkgd(theme_win, POPUP_CLR);
+    curs_set(0);
+
+    wmove(theme_win, line++, 1);
+    waddstr(theme_win, " Themes: ");
+    wmove(theme_win, line++, 1);
+    waddstr(theme_win, " [1] default ");
+    wmove(theme_win, line++, 1);
+    waddstr(theme_win, " [2] earth ");
+    wmove(theme_win, line++, 1);
+    waddstr(theme_win, " [3] icy  ");
+    wmove(theme_win, line++, 1);
+    waddstr(theme_win, " [4] hell ");
+
+    prefresh(theme_win, 0, 0,
+             offset_y - win_height / 2,
+             offset_x - win_width / 2,
+             offset_y + win_height / 2,
+             offset_x + win_width / 2);
+
+    int choice = wgetch(theme_win);
+
+    flushinp();
+    wclear(theme_win);
+    wrefresh(theme_win);
+    delwin(theme_win);
+    curs_set(1);
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+    return choice;
+}
+void change_theme(int popup)
+{
+    int fg_field, bg_field,
+        fg_menu, bg_menu,
+        fg_popup, bg_popup;
+
+    if (popup)
+        E.current_theme = change_theme_popup();
+
+    switch (E.current_theme)
+    {
+    case 49: // default
+        fg_menu = COLOR_BLACK, bg_menu = COLOR_YELLOW;
+        fg_field = COLOR_CYAN, bg_field = COLOR_BLUE;
+        fg_popup = COLOR_YELLOW, bg_popup = COLOR_BLACK;
+        break;
+    case 50: // leet
+        fg_menu = COLOR_BLACK, bg_menu = COLOR_GREEN;
+        fg_field = COLOR_GREEN, bg_field = COLOR_BLACK;
+        fg_popup = COLOR_GREEN, bg_popup = COLOR_BLACK;
+        break;
+    case 51: // icy
+        fg_menu = COLOR_CYAN, bg_menu = COLOR_BLACK;
+        fg_field = COLOR_BLACK, bg_field = COLOR_WHITE;
+        fg_popup = COLOR_CYAN, bg_popup = COLOR_BLACK;
+        break;
+    case 52: // hell
+        fg_menu = COLOR_BLACK, bg_menu = COLOR_RED;
+        fg_field = COLOR_RED, bg_field = COLOR_BLACK;
+        fg_popup = COLOR_RED, bg_popup = COLOR_BLACK;
+        break;
+    default:
+        setEditorStatus(0, "Invalid Theme Choice");
+        return;
+    }
+
+    init_pair(1, fg_menu, bg_menu);
+    wattrset(win[MENU_WINDOW], MENU_CLR);
+
+    init_pair(2, fg_field, bg_field);
+    wattrset(win[EDIT_WINDOW], EDIT_CLR);
+
+    init_pair(3, fg_popup, bg_popup);
+    wattrset(win[INFO_WINDOW], POPUP_CLR);
+
+    if (popup)
+        setEditorStatus(0, "theme successfully changed");
+}

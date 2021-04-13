@@ -107,7 +107,7 @@ struct editorConfig
 {
     int Cx; // x position of edit window(screen)
     int Cy; // y position of edit window(screen)
-    char current_theme;
+    short current_theme;
     int numOfRows; // number of Rows loaded in Data Structure
     int x_offset;  // displacement of scrollposition of x-axis
     int y_offset;  // displacement of scrollposition of y-axis
