@@ -799,6 +799,31 @@ void pasteLine()
     draw_window(EDIT_WINDOW);
     E.dirtyFlag = 1;
 }
+void horiz_tab()
+{
+    int xoff = E.Cx + E.x_offset - DEFPOS_X;
+    editorRow *row = &E.currentRow->row;
+    int pos = (xoff > row->size) ? row->size : xoff;
+
+    // Increase allocated memory chunk by editor tab size value
+    row->chars = realloc(row->chars, sizeof(char) * (row->size + KITE_TABSIZE + 1));
+
+    memmove(&row->chars[pos + KITE_TABSIZE], &row->chars[pos], sizeof(char) * (row->size - pos));
+
+    row->size += KITE_TABSIZE;
+    row->chars[row->size] = '\0';
+
+    for (int i = 0; i < KITE_TABSIZE; ++i)
+        row->chars[pos + i] = ' ';
+
+    if (E.Cx + KITE_TABSIZE < LIMIT_X)
+        E.Cx += KITE_TABSIZE;
+    else
+    {
+        E.x_offset += KITE_TABSIZE - (LIMIT_X - E.Cx);
+        E.Cx = LIMIT_X;
+    }
+}
 void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
@@ -842,12 +867,14 @@ void read_key()
     case KEY_RIGHT:
         editorMoveCursor(c);
         break;
+    case KEY_HT:
+        horiz_tab();
+        break;
     case CTRL_KEY('c'):
         if (E.Cx + E.x_offset - 1 == E.currentRow->row.size)
             copyLine();
         else
             copyWord();
-
         break;
     case CTRL_KEY('x'):
         if (E.Cx + E.x_offset - 1 == E.currentRow->row.size)
@@ -860,21 +887,34 @@ void read_key()
         pasteLine();
         E.dirtyFlag = 1;
         break;
-    case KEY_HOME:
-        for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
+    case KEY_NPAGE:
+        for (int i = 0; i < LIMIT_Y - DEFPOS_Y; i++)
+        {
+            editorMoveCursor(KEY_DOWN);
+        }
+        break;
+    case KEY_PPAGE:
+        for (int i = 0; i < LIMIT_Y - DEFPOS_Y; i++)
         {
             editorMoveCursor(KEY_UP);
-            editorMoveCursor(KEY_UP);
         }
-
+        break;
+    case KEY_HOME:
+        E.Cx = DEFPOS_X;
+        E.x_offset = 0;
+        werase(win[EDIT_WINDOW]);
+        draw_window(EDIT_WINDOW);
         break;
     case KEY_END:
-        // wprintw(win[EDIT_WINDOW], "key end");
-        for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
+        if (E.currentRow->row.size + 1 < LIMIT_X)
+            E.Cx = E.currentRow->row.size + 1;
+        else
         {
-            editorMoveCursor(KEY_DOWN);
-            editorMoveCursor(KEY_DOWN);
+            E.Cx = LIMIT_X;
+            E.x_offset = E.currentRow->row.size - LIMIT_X + 1;
         }
+        werase(win[EDIT_WINDOW]);
+        draw_window(EDIT_WINDOW);
         break;
     case KEY_ENTER:
     case KEY_NL:
