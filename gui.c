@@ -236,7 +236,7 @@ int change_theme_popup(void)
     wmove(theme_win, line++, 1);
     waddstr(theme_win, " [2] earth ");
     wmove(theme_win, line++, 1);
-    waddstr(theme_win, " [3] icy  ");
+    waddstr(theme_win, " [3] water ");
     wmove(theme_win, line++, 1);
     waddstr(theme_win, " [4] hell ");
 
@@ -259,9 +259,11 @@ int change_theme_popup(void)
 }
 void change_theme(int popup)
 {
-    int fg_field, bg_field,
+    int fg_edit, bg_edit,
         fg_menu, bg_menu,
-        fg_popup, bg_popup;
+        fg_popup, bg_popup,
+        fg_keywords, fg_comment,
+        fg_numbers, fg_strings;
 
     if (popup)
         E.current_theme = change_theme_popup();
@@ -270,23 +272,35 @@ void change_theme(int popup)
     {
     case 49: // default
         fg_menu = COLOR_BLACK, bg_menu = COLOR_YELLOW;
-        fg_field = COLOR_CYAN, bg_field = COLOR_BLUE;
+        fg_edit = COLOR_CYAN, bg_edit = COLOR_BLUE;
         fg_popup = COLOR_YELLOW, bg_popup = COLOR_BLACK;
+        fg_keywords = COLOR_MAGENTA, fg_numbers = COLOR_RED;
+        fg_comment = COLOR_WHITE, fg_strings = COLOR_GREEN;
+
         break;
-    case 50: // leet
+    case 50: // earth
         fg_menu = COLOR_BLACK, bg_menu = COLOR_GREEN;
-        fg_field = COLOR_GREEN, bg_field = COLOR_BLACK;
+        fg_edit = COLOR_GREEN, bg_edit = COLOR_BLACK;
         fg_popup = COLOR_GREEN, bg_popup = COLOR_BLACK;
+        fg_keywords = COLOR_MAGENTA, fg_numbers = COLOR_RED;
+        fg_comment = COLOR_WHITE, fg_strings = COLOR_CYAN;
+
         break;
-    case 51: // icy
-        fg_menu = COLOR_CYAN, bg_menu = COLOR_BLACK;
-        fg_field = COLOR_BLACK, bg_field = COLOR_WHITE;
-        fg_popup = COLOR_CYAN, bg_popup = COLOR_BLACK;
+    case 51: // water
+        fg_menu = COLOR_BLACK, bg_menu = COLOR_YELLOW;
+        fg_edit = COLOR_YELLOW, bg_edit = COLOR_BLACK;
+        fg_popup = COLOR_YELLOW, bg_popup = COLOR_BLUE;
+        fg_keywords = COLOR_MAGENTA, fg_numbers = COLOR_RED;
+        fg_comment = COLOR_WHITE, fg_strings = COLOR_GREEN;
+
         break;
     case 52: // hell
         fg_menu = COLOR_BLACK, bg_menu = COLOR_RED;
-        fg_field = COLOR_RED, bg_field = COLOR_BLACK;
+        fg_edit = COLOR_RED, bg_edit = COLOR_BLACK;
         fg_popup = COLOR_RED, bg_popup = COLOR_BLACK;
+        fg_keywords = COLOR_CYAN, fg_numbers = COLOR_WHITE;
+        fg_comment = COLOR_WHITE, fg_strings = COLOR_GREEN;
+
         break;
     default:
         setEditorStatus(0, "Invalid Theme Choice");
@@ -296,11 +310,21 @@ void change_theme(int popup)
     init_pair(1, fg_menu, bg_menu);
     wattrset(win[MENU_WINDOW], MENU_CLR);
 
-    init_pair(2, fg_field, bg_field);
+    init_pair(2, fg_edit, bg_edit);
     wattrset(win[EDIT_WINDOW], EDIT_CLR);
 
     init_pair(3, fg_popup, bg_popup);
     wattrset(win[INFO_WINDOW], POPUP_CLR);
+    init_pair(5, fg_numbers, bg_edit);
+    wattrset(win[INFO_WINDOW], COLOR_PAIR(5));
+    init_pair(6, fg_strings, bg_edit);
+    wattrset(win[INFO_WINDOW], COLOR_PAIR(6));
+    init_pair(7, fg_keywords, bg_edit);
+    wattrset(win[INFO_WINDOW], COLOR_PAIR(7));
+    init_pair(8, fg_comment, bg_edit);
+    wattrset(win[INFO_WINDOW], COLOR_PAIR(8));
+    init_pair(9, COLOR_YELLOW, bg_edit);
+    wattrset(win[INFO_WINDOW], COLOR_PAIR(9));
 
     if (popup)
         setEditorStatus(0, "theme successfully changed");
