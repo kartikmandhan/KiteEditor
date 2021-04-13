@@ -26,6 +26,8 @@ int init_colors()
 
         // init_color(macro of color to be changed, 0-999, 0-999, 0-999);
         init_color(COLOR_BLUE, 121, 168, 215);
+        init_color(COLOR_MAGENTA, 922, 360, 352);
+        init_color(COLOR_RED, 945, 494, 298);
         init_color(COLOR_GREEN, 47, 955, 0);
         init_color(COLOR_CYAN, 458, 984, 890);
         init_color(COLOR_BLACK, 126, 127, 131);

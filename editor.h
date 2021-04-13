@@ -98,9 +98,10 @@ typedef struct editorSyntax
 } editorSyntax;
 typedef struct clipboard
 {
-    char *chars;
     short fullLineCopy;
+    short fullLineCut;
     int len;
+    char *chars;
 } clipboard;
 struct editorConfig
 {

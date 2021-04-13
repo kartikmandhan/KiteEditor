@@ -542,10 +542,18 @@ void editorMoveCursor(int key)
         break;
     }
     //makes cursor move up and down only upto bounds of line,when up or down arrow is pressed
-    if (E.Cx > E.currentRow->row.size)
+    if (E.Cx + E.x_offset > E.currentRow->row.size)
     {
-        E.Cx = E.currentRow->row.size + 1;
-        E.x_offset = 0;
+        if (E.currentRow->row.size + 1 < LIMIT_X)
+        {
+            E.Cx = E.currentRow->row.size + 1;
+            E.x_offset = 0;
+        }
+        else
+        {
+            E.Cx = LIMIT_X;
+            E.x_offset = E.currentRow->row.size + 1 - LIMIT_X;
+        }
     }
 }
 void editorRowDelChar(editorRow *row, int at)
@@ -558,7 +566,7 @@ void editorRowDelChar(editorRow *row, int at)
 }
 void editorDelChar()
 {
-    if (E.Cy + E.y_offset == DEFPOS_Y)
+    if (E.Cy + E.y_offset == DEFPOS_Y && E.Cx + E.x_offset == DEFPOS_X)
         return;
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
@@ -705,17 +713,64 @@ void copyLine()
     E.clip.len = E.currentRow->row.size;
     E.clip.fullLineCopy = 1;
 }
+void cutLine()
+{
+    if (E.clip.fullLineCut && E.clip.chars)
+    {
+        // free previously allocated memory
+        free(E.clip.chars);
+        E.clip.chars = NULL;
+    }
+    E.clip.chars = E.currentRow->row.chars;
+    E.clip.len = E.currentRow->row.size;
+    vnode *p = E.currentRow;
+    vnode *temp = p->prev;
+    if (p == E.l.head)
+        E.l.head = p->next;
+    else
+        temp->next = p->next;
+    if (p == E.l.tail)
+        E.l.tail = temp;
+    else
+        p->next->prev = temp;
+    E.numOfRows--;
+    E.currentRow = E.currentRow->next;
+    E.clip.fullLineCut = 1;
+    free(p);
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
+}
+void cutWord()
+{
+    if (E.clip.fullLineCut == 0 && E.clip.chars)
+    {
+        // free previously allocated memory
+        free(E.clip.chars);
+        E.clip.chars = NULL;
+    }
+    E.clip.fullLineCopy = 0;
+    E.clip.fullLineCut = 0;
+    char *temp = E.currentRow->row.chars;
+    int i, x = E.Cx + E.x_offset - DEFPOS_X, size = 0;
+    for (i = x; !is_separator(temp[i]); i++)
+        size++;
+    E.clip.chars = (char *)malloc(sizeof(char) * (size + 1));
+    memcpy(E.clip.chars, &temp[x], size);
+    E.clip.chars[size] = '\0';
+    E.Cx = E.Cx + size;
+    for (int i = 0; i < size; i++)
+        editorDelChar();
+}
 void copyWord()
 {
     if (E.clip.fullLineCopy == 0 && E.clip.chars)
     {
         // free previously allocated memory
-        setEditorStatus(0, "herer");
-
         free(E.clip.chars);
         E.clip.chars = NULL;
     }
     E.clip.fullLineCopy = 0;
+    E.clip.fullLineCut = 0;
     char *temp = E.currentRow->row.chars;
     int i, x = E.Cx + E.x_offset - DEFPOS_X, size = 0;
     for (i = x; !is_separator(temp[i]); i++)
@@ -726,7 +781,7 @@ void copyWord()
 }
 void pasteLine()
 {
-    if (E.clip.fullLineCopy)
+    if (E.clip.fullLineCopy || E.clip.fullLineCut)
     {
         insertRowAbove(E.currentRow, E.clip.chars, E.clip.len);
         editorMoveCursor(KEY_DOWN);
@@ -789,15 +844,21 @@ void read_key()
         break;
     case CTRL_KEY('c'):
         if (E.Cx + E.x_offset - 1 == E.currentRow->row.size)
-        {
             copyLine();
-        }
         else
             copyWord();
 
         break;
+    case CTRL_KEY('x'):
+        if (E.Cx + E.x_offset - 1 == E.currentRow->row.size)
+            cutLine();
+        else
+            cutWord();
+        E.dirtyFlag = 1;
+        break;
     case CTRL_KEY('v'):
         pasteLine();
+        E.dirtyFlag = 1;
         break;
     case KEY_HOME:
         for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)

@@ -54,7 +54,7 @@ editorSyntax syntaxDB[] = {
      // flags
      HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
     {"java", java_extensions, "//", java_keywords, HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
-    {"python", python_extensions, "#", python_keywords, HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
+    {"py", python_extensions, "#", python_keywords, HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
     {"js", javascript_extensions, "//", javascript_keywords, HIGHLIGHT_NUMBERS | HIGHLIGHT_STRINGS},
 };
 #endif // !SYNTAXHL_H
