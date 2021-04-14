@@ -646,7 +646,7 @@ void saveFile()
 void saveFileReadInChunk()
 {
     // A short Optimization
-    if (E.newFileflag == 2 && E.dirtyFlag == 0)
+    if (E.newFileflag == 0 && E.dirtyFlag == 0)
     {
         setEditorStatus(0, "File Saved Successfully");
         return;
@@ -661,7 +661,6 @@ void saveFileReadInChunk()
         E.newFileflag = 0;
     }
     //  Open all required files
-    // w+ mode creates the file if it is not present, which is required when someone creates an empty file
     fPtr = fopen(E.fname, "r");
     // creating an hidden file ,since it starts with a '.'
     fTemp = fopen(".replace.tmp", "w");
