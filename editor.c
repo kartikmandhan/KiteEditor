@@ -128,6 +128,8 @@ void editor_init()
     // init
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    E.current_theme = 50;
+    change_theme(0);
 }
 void display()
 {
@@ -621,7 +623,7 @@ void saveFile()
         save_file_popup();
         E.newFileflag = 0;
     }
-    FILE *fp = fopen(E.fname, "r");
+    FILE *fp = fopen(E.fname, "w");
     if (fp == NULL)
     {
         setEditorStatus(1, "Unable to open the file");
