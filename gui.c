@@ -32,11 +32,11 @@ void draw_menu(enum win_type wt)
     offset += 15;
     mvwprintw(win[wt], 1, offset, "  F2 - Save  ");
     offset += 15;
-    mvwprintw(win[wt], 1, offset, "  F3 - Extra  ");
-    offset += 16;
-    mvwprintw(win[wt], 1, offset, "  F4 - Help  ");
+    mvwprintw(win[wt], 1, offset, "  F3 - Syn Highlight  ");
+    offset += 24;
+    mvwprintw(win[wt], 1, offset, "  F5 - Help  ");
     offset += 15;
-    mvwprintw(win[wt], 1, offset, "  F5 - Exit  ");
+    mvwprintw(win[wt], 1, offset, "  F8 - Exit  ");
     mvwprintw(win[wt], 1, COLS - 20, " made by Kartik ");
     if (E.dirtyFlag)
         mvwprintw(win[wt], 3, COLS - 20, "(modified)");
@@ -322,4 +322,73 @@ void change_theme(int popup)
     wattrset(win[INFO_WINDOW], COLOR_PAIR(9));
     if (popup)
         setEditorStatus(0, "theme successfully changed");
+}
+void get_help(void)
+{
+    WINDOW *help_win;
+
+    int win_height = 20;
+    int win_width = 45;
+    int line = 1;
+    int offset_y = LINES / 2;
+    int offset_x = COLS / 2;
+
+    help_win = newpad(win_height, win_width);
+    wattron(help_win, BORDER_CLR);
+    box(help_win, ACS_VLINE, ACS_HLINE);
+    wattroff(help_win, BORDER_CLR);
+    wbkgd(help_win, POPUP_CLR);
+
+    curs_set(0);
+
+    wmove(help_win, line++, win_width / 3);
+    waddstr(help_win, " KITE Editor");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, "     (Kartik's Integrated Text Editor)");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, "-------------------------------------------");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " F1, ^O - Open file");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " F2, ^S - Save file");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " F3, ^E - Syntax Highlighting");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " ^F - Find  | ^G - Find Next");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " ^C - Copy Word");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " F5 - Help");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " ^X - Cut Word");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " ^C,^X - (At end of Line) Copy/Cut Line");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " ^V - Paste");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " F8, ^Q - Exit");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, "");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, "-------------------------------------------");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " Fn + arrow Keys: Navigation");
+    wmove(help_win, line++, 1);
+    waddstr(help_win, " F4, ^T - change theme");
+    prefresh(help_win, 0, 0,
+             offset_y - win_height / 2,
+             offset_x - win_width / 2,
+             offset_y + win_height / 2,
+             offset_x + win_width / 2);
+
+    // Press any key to exit
+    wgetch(help_win);
+
+    flushinp();
+    wclear(help_win);
+    wrefresh(help_win);
+    delwin(help_win);
+    curs_set(1);
+    werase(win[EDIT_WINDOW]);
+    draw_window(EDIT_WINDOW);
 }

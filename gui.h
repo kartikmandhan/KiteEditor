@@ -15,4 +15,5 @@ void save_file_popup(void);
 void open_file_popup(void);
 char *search_file_popup(WINDOW *findwin);
 void change_theme(int popup);
+void get_help(void);
 #endif // !__GUI_H__
