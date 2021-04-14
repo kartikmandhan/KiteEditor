@@ -93,6 +93,20 @@ void draw_info(enum win_type wt)
     else
         mvwprintw(win[wt], 3, 4, "Filetype:txt");
     wattroff(win[wt], MENU_CLR);
+    if (E.clip.chars)
+    {
+        int clipLen = strlen(E.clip.chars);
+        int availableLen = LIMIT_X - 50;
+        if (clipLen < availableLen)
+            mvwprintw(win[wt], 3, 19, "| ClipBoard:%s", E.clip.chars);
+        else
+        {
+            char clip[100];
+            strncpy(clip, E.clip.chars, availableLen - 1);
+            clip[availableLen - 3] = clip[availableLen - 2] = clip[availableLen - 1] = '.';
+            mvwprintw(win[wt], 3, 19, "| ClipBoard:%s", clip);
+        }
+    }
 }
 void save_file_popup(void)
 {

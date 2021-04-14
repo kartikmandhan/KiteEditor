@@ -102,9 +102,10 @@ typedef struct editorSyntax
 } editorSyntax;
 typedef struct clipboard
 {
-    char *chars;
     short fullLineCopy;
+    short fullLineCut;
     int len;
+    char *chars;
 } clipboard;
 void vlist_init(vlist *l);
 void appendRow(vlist *l, char *line, int lineLength);
