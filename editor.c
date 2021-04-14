@@ -21,7 +21,7 @@ void appendRow(vlist *l, char *line, int lineLength)
     new_node->row.gapBuffer = NULL;
     memcpy(new_node->row.chars, line, lineLength);
     new_node->row.chars[lineLength] = '\0';
-    // editorRowUpdateHighlight(&new_node->row);
+    editorRowUpdateHighlight(&new_node->row);
     if (l->head == NULL)
     {
         new_node->prev = NULL;
@@ -542,6 +542,8 @@ void openFile()
     {
         setEditorStatus(1, "Unable to open the file, created a blank file instead");
         createBlankFile();
+        if (!strcmp(E.fname, ""))
+            E.newFileflag = 2;
         // selectSyntaxHighlighting();
         return;
     }
@@ -612,7 +614,7 @@ void saveFile()
 {
     int buflen = 0;
     char *buf = dataStructureToString(&buflen);
-    if (E.newFileflag == 2)
+    if (E.newFileflag == 2 && E.dirtyFlag == 0)
     {
         save_file_popup();
         E.newFileflag = 0;
@@ -1087,6 +1089,10 @@ void read_key()
         endwin();
         exit(EXIT_SUCCESS);
         break;
+    case CTRL_KEY('t'):
+    case KEY_F(4):
+        change_theme(1);
+        break;
     case CTRL_KEY('f'):
         search(1);
         break;
@@ -1157,6 +1163,7 @@ void read_key()
         editorInsertNewline();
         break;
     case CTRL_KEY('s'):
+    case KEY_F(2):
         // saveFile();
         saveFileReadInChunk();
         break;
