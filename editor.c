@@ -106,8 +106,6 @@ void editor_init()
     init_windows();
     refresh();
     init_gui();
-    // wrefresh(win[INFO_WINDOW]);
-    // init
     E.query = NULL;
     E.syntax = NULL;
     E.clip.chars = NULL;
@@ -256,7 +254,6 @@ void saveFile()
         return;
     }
     // selectSyntaxHighlighting();
-    // mvwprintw(win[MENU_WINDOW], 1, 25, "%s %d", buf,buflen);
     wrefresh(win[MENU_WINDOW]);
     int wsize = fwrite(buf, sizeof(char), buflen, fp);
     if (wsize != buflen)
@@ -278,6 +275,7 @@ void saveFileReadInChunk()
         setEditorStatus(0, "File Saved Successfully");
         return;
     }
+    setEditorStatus(0, "Saving...");
     FILE *fPtr;
     FILE *fTemp;
     char *buffer = NULL;
@@ -288,16 +286,14 @@ void saveFileReadInChunk()
         E.newFileflag = 0;
     }
     //  Open all required files
-    // w+ mode creates the file if it is not present, which is required when someone creates an empty file
     fPtr = fopen(E.fname, "r");
     // creating an hidden file ,since it starts with a '.'
     fTemp = fopen(".replace.tmp", "w");
-    if (fPtr == NULL || fTemp == NULL)
+    if (fPtr == NULL)
     {
-        // Unable to open file hence exit
-        setEditorStatus(1, "Unable to open the file");
-        printf("\nUnable to open file.\n");
-        printf("Please check whether file exists and you have read/write privilege.\n");
+        // creting an empty file
+        FILE *fp = fopen(E.fname, "w");
+        fclose(fp);
         remove(".replace.tmp");
         return;
     }
@@ -385,9 +381,6 @@ void editorInsertChar(int c, int calledByUndoRedo)
 void print_text()
 {
     // initialising cursor to start of the editor
-    // E.Cx = DEFPOS_X;
-    // E.Cy = DEFPOS_Y;
-    // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     // these x and y are used for the position where text will be printed
     int x = 0, y = 0;
 
@@ -433,17 +426,7 @@ void print_text()
 }
 void editorRefresh()
 {
-    // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
-    // int rowsToPrint = E.numOfRows;
-
-    // wprintw(win[EDIT_WINDOW], "key %ld", rowsToPrint);
-    // static int flag = 0;
-    // if (!flag)
-    // {
-
     print_text();
-    // flag = 1;
-    // }
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     werase(win[INFO_WINDOW]);
     draw_window(INFO_WINDOW);
@@ -457,15 +440,6 @@ void editorRefresh()
 }
 void editorMoveCursor(int key)
 {
-    // wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
-    // static int flag = 0;
-    // static vnode *p = NULL;
-    // if (!flag)
-    // {
-    //     p = E.l.head;
-    //     flag = 1;
-    // }
-    // wprintw(win[EDIT_WINDOW], "%d %u", p->row.size, p);
     switch (key)
     {
     case KEY_LEFT:
@@ -627,8 +601,6 @@ void editorInsertNewline()
     else if (E.Cx + E.x_offset - DEFPOS_X == E.currentRow->row.size)
     {
         insertRowBelow(E.currentRow, "", 0);
-        // fprintf(stderr, "CHECKPOINT REACHED @  %s:%i\n", __FILE__, __LINE__);
-        // since we are passing a 0 length row we need to adjust the curentRow pointer
     }
     else
     {
@@ -988,6 +960,7 @@ void read_key()
             return;
         }
         endwin();
+        printf("KITE (Kartik's Integrated Text Editor) terminated Successfuly :-)\n");
         exit(EXIT_SUCCESS);
         break;
     case CTRL_KEY('f'):
@@ -1224,8 +1197,6 @@ void editorRowUpdateHighlight(editorRow *row)
         i++;
     }
 }
-// this null will help us stop iteration in selectSyntaxHighlighting
-
 void selectSyntaxHighlighting()
 {
     E.syntax = NULL;
@@ -1271,47 +1242,17 @@ int main(int argc, char *argv[])
     else if (argc == 1)
     {
         createBlankFile();
-
         E.newFileflag = 2;
     }
     else
     {
+        endwin();
+        fprintf(stderr, "A Filename Or No arguement expected! ");
         exit(0);
     }
-    // mvprintw(E.screenCols / 2, E.screenRows / 2 - 10, "welcome to my editor");
     while (1)
     {
         editorRefresh();
-
         read_key();
-
-        // refresh();
-        // move(10, 5 + x);
-        // x += 5;
-        // printw("left");
     }
-    // if (!has_colors())
-    // {
-    //     printw("Colors are not supported for you");
-    //     getch();
-    //     return -1;
-    // }
-    // init_colors();
-    // // 1 becomes identity for the color pair
-    // //              text color, bg color
-    // // init_pair(1, COLOR_GREEN, COLOR_CYAN);
-    // // init_pair(2, COLOR_MAGENTA, COLOR_YELLOW);
-    // WINDOW *win1 = newwin(LINES - 8, COLS, 3, 0);
-    // box(win1, 0, 0);
-    // wbkgd(win1, EDIT_CLR);
-
-    // refresh();
-    // wattron(win1, COLOR_PAIR(2));
-    // wprintw(win1, "diffrent color");
-    // wattroff(win1, COLOR_PAIR(2));
-    // wrefresh(win1);
-    getch();
-    getch();
-    endwin();
-    exit(EXIT_SUCCESS);
 }

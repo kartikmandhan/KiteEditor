@@ -1,7 +1,6 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 #include <termios.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
