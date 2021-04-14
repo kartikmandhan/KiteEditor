@@ -357,7 +357,7 @@ void editorRowInsertChar(editorRow *row, int at, int ch)
     if (E.syntaxHighlightFlag)
         editorRowUpdateHighlight(row);
 }
-void editorInsertChar(int c)
+void editorInsertChar(int c, int calledByUndoRedo)
 {
     if (iscntrl(c))
     {
@@ -369,13 +369,16 @@ void editorInsertChar(int c)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
     editorMoveCursor(KEY_RIGHT);
-    event *d = (event *)malloc(sizeof(event));
-    d->ch = c;
-    d->r = E.currentRow;
-    d->type = 1;
-    d->x_pos = E.Cx + E.x_offset;
-    d->y_pos = E.Cy + E.y_offset;
-    push(&undoStack, d);
+    if (!calledByUndoRedo)
+    {
+        event *d = (event *)malloc(sizeof(event));
+        d->ch = c;
+        d->r = E.currentRow;
+        d->type = 1;
+        d->x_pos = E.Cx + E.x_offset;
+        d->y_pos = E.Cy + E.y_offset;
+        push(&undoStack, d);
+    }
     E.dirtyFlag = 1;
 }
 
@@ -448,7 +451,7 @@ void editorRefresh()
     if (!E.newFileflag) //either 1 or 2 in both cases it should call this
         if (E.numOfRows - (E.Cy + E.y_offset) < 10)
         {
-            setEditorStatus(0, "here %d %d", E.numOfRows, E.numOfRows - (E.Cy + E.y_offset));
+            // setEditorStatus(0, "here %d %d", E.numOfRows, E.numOfRows - (E.Cy + E.y_offset));
             allocateMoreRows(NULL, 10);
         }
 }
@@ -582,12 +585,22 @@ void editorRowDelChar(editorRow *row, int at)
     row->size--;
     E.dirtyFlag = 1;
 }
-void editorDelChar()
+void editorDelChar(int calledByUndo)
 {
     if (E.Cy + E.y_offset == DEFPOS_Y && E.Cx + E.x_offset == DEFPOS_X)
         return;
     werase(win[EDIT_WINDOW]);
     draw_window(EDIT_WINDOW);
+    if (!calledByUndo)
+    {
+        event *d = (event *)malloc(sizeof(event));
+        d->ch = E.currentRow->row.chars[E.Cx + E.x_offset - DEFPOS_X - 1];
+        d->r = E.currentRow;
+        d->type = 2;
+        d->x_pos = E.Cx + E.x_offset - DEFPOS_X;
+        d->y_pos = E.Cy + E.y_offset;
+        push(&undoStack, d);
+    }
     if (E.Cx + E.x_offset == DEFPOS_X)
     {
         if (E.currentRow->row.size != 0)
@@ -603,6 +616,7 @@ void editorDelChar()
     editorMoveCursor(KEY_LEFT);
     if (E.syntaxHighlightFlag)
         editorRowUpdateHighlight(&E.currentRow->row);
+    E.dirtyFlag = 1;
 }
 void editorInsertNewline()
 {
@@ -777,7 +791,7 @@ void cutWord()
     E.clip.chars[size] = '\0';
     E.Cx = E.Cx + size;
     for (int i = 0; i < size; i++)
-        editorDelChar();
+        editorDelChar(0);
 }
 void copyWord()
 {
@@ -809,7 +823,7 @@ void pasteLine()
         int i = 0;
         while (E.clip.chars[i] != '\0')
         {
-            editorInsertChar(E.clip.chars[i]);
+            editorInsertChar(E.clip.chars[i], 0);
             i++;
         }
     }
@@ -842,12 +856,14 @@ void horiz_tab()
         E.Cx = LIMIT_X;
     }
 }
-void undo()
+void redo()
 {
-    event *e = pop(&undoStack);
+    event *e = pop(&redoStack);
+    push(&undoStack, e);
+
     if (e == NULL)
         return;
-    push(&redoStack, e);
+    setEditorStatus(0, "redo:%d %d %d %c", e->x_pos, e->y_pos, e->type, e->ch);
     // vnode *prev = E.currentRow;
     switch (e->type)
     {
@@ -855,13 +871,13 @@ void undo()
         E.currentRow = e->r;
         if (e->x_pos < LIMIT_X)
         {
-            E.Cx = e->x_pos;
+            E.Cx = e->x_pos - DEFPOS_X;
             E.x_offset = 0;
         }
         else
         {
             E.Cx = LIMIT_X;
-            E.x_offset = e->x_pos - LIMIT_X;
+            E.x_offset = e->x_pos - LIMIT_X - DEFPOS_X;
         }
         if (e->y_pos < LIMIT_Y)
         {
@@ -871,13 +887,82 @@ void undo()
         else
         {
             E.Cy = LIMIT_Y;
-            E.x_offset = e->y_pos - LIMIT_Y;
+            E.y_offset = e->y_pos - LIMIT_Y;
         }
-        editorDelChar();
+        editorInsertChar(e->ch, 1);
         // E.currentRow = prev;
+        break;
+    case 2:
+        E.currentRow = e->r;
+        if (e->x_pos < LIMIT_X)
+        {
+            E.Cx = e->x_pos + 1;
+            E.x_offset = 0;
+        }
+        else
+        {
+            E.Cx = LIMIT_X;
+            E.x_offset = e->x_pos - LIMIT_X + 1;
+        }
+        if (e->y_pos < LIMIT_Y)
+        {
+            E.Cy = e->y_pos;
+            E.y_offset = 0;
+        }
+        else
+        {
+            E.Cy = LIMIT_Y;
+            E.y_offset = e->y_pos - LIMIT_Y;
+        }
+        editorDelChar(1);
         break;
 
     default:
+        setEditorStatus(0, "redo");
+        break;
+    }
+}
+void undo()
+{
+    event *e = pop(&undoStack);
+    if (e == NULL)
+        return;
+    push(&redoStack, e);
+    setEditorStatus(0, "undo:%d %d %d %c", e->x_pos, e->y_pos, e->type, e->ch);
+    E.currentRow = e->r;
+    if (e->x_pos < LIMIT_X)
+    {
+        E.Cx = e->x_pos;
+        E.x_offset = 0;
+    }
+    else
+    {
+        E.Cx = LIMIT_X;
+        E.x_offset = e->x_pos - LIMIT_X;
+    }
+    if (e->y_pos < LIMIT_Y)
+    {
+        E.Cy = e->y_pos;
+        E.y_offset = 0;
+    }
+    else
+    {
+        E.Cy = LIMIT_Y;
+        E.y_offset = e->y_pos - LIMIT_Y;
+    }
+    // vnode *prev = E.currentRow;
+    switch (e->type)
+    {
+    case 1:
+        editorDelChar(1);
+        // E.currentRow = prev;
+        break;
+    case 2:
+        editorInsertChar(e->ch, 1);
+        break;
+    default:
+        setEditorStatus(1, "undo");
+
         break;
     }
 }
@@ -889,6 +974,9 @@ void read_key()
     {
     case CTRL_KEY('z'):
         undo();
+        break;
+    case CTRL_KEY('y'):
+        redo();
         break;
     case CTRL_KEY('q'):
     case KEY_F(8):
@@ -996,7 +1084,7 @@ void read_key()
     case KEY_BS:
     case KEY_DEL:
     case KEY_BACKSPACE:
-        editorDelChar();
+        editorDelChar(0);
         break;
     case KEY_F(1):
         if (E.l.head != NULL)
@@ -1006,7 +1094,7 @@ void read_key()
         break;
     default:
         if (!iscntrl(c) && c < 127 && c >= 32)
-            editorInsertChar(c);
+            editorInsertChar(c, 0);
         else
             beep();
         break;
