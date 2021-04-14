@@ -93,10 +93,10 @@ void editor_init()
     vlist_init(&E.l);
     noecho();
     // LINES, COLS gives current rows and cols of the terminal and are defined in Ncurses library
-    if (LINES < 30 || COLS < 98)
+    if (LINES < 30 || COLS < 108)
     {
         endwin();
-        fprintf(stderr, "Terminal window is too small.\n Min: 30x98, your: %dx%d\n", LINES, COLS);
+        fprintf(stderr, "Terminal window is too small.\n Min: 30x108, your: %dx%d\n", LINES, COLS);
         exit(EXIT_FAILURE);
     }
     init_colors();
@@ -135,6 +135,8 @@ void destroyDataStructure()
 }
 void createBlankFile()
 {
+    FILE *fp = fopen(E.fname, "w");
+    fclose(fp);
     appendRow(&E.l, "", 0);
     E.currentRow = E.l.head;
     E.newFileflag = 1;
@@ -280,7 +282,7 @@ void saveFileReadInChunk()
     }
     //  Open all required files
     // w+ mode creates the file if it is not present, which is required when someone creates an empty file
-    fPtr = fopen(E.fname, "w+");
+    fPtr = fopen(E.fname, "r");
     // creating an hidden file ,since it starts with a '.'
     fTemp = fopen(".replace.tmp", "w");
     if (fPtr == NULL || fTemp == NULL)
@@ -836,6 +838,7 @@ void read_key()
     switch (c)
     {
     case CTRL_KEY('q'):
+    case KEY_F(8):
         if (E.dirtyFlag && quit_times > 0)
         {
             setEditorStatus(0, "WARNING!!! File has unsaved changes.Press Ctrl-Q %d more times to quit.", quit_times);
@@ -851,7 +854,7 @@ void read_key()
         break;
     case CTRL_KEY('t'):
     case KEY_F(4):
-        change_theme(1);
+        change_theme();
         break;
     case CTRL_KEY('g'):
         if (E.query != NULL)
@@ -860,6 +863,7 @@ void read_key()
             setEditorStatus(0, "Use ctrl+f to find, before using find next");
         break;
     case KEY_F(3):
+    case CTRL_KEY('e'):
         if (E.syntaxHighlightFlag)
             E.syntaxHighlightFlag = 0;
         else
@@ -867,6 +871,10 @@ void read_key()
             E.syntaxHighlightFlag = 1;
             selectSyntaxHighlighting();
         }
+        break;
+    case KEY_F(5):
+        get_help();
+        break;
     case KEY_DOWN:
     case KEY_UP:
     case KEY_LEFT:
@@ -1122,6 +1130,7 @@ int main(int argc, char *argv[])
     else if (argc == 1)
     {
         createBlankFile();
+
         E.newFileflag = 2;
     }
     else
