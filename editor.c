@@ -1062,6 +1062,11 @@ void pasteLine()
     draw_window(EDIT_WINDOW);
     E.dirtyFlag = 1;
 }
+void horiz_tab()
+{
+    for (int i = 0; i < KITE_TABSIZE; i++)
+        editorInsertChar(' ');
+}
 void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
@@ -1122,21 +1127,30 @@ void read_key()
         pasteLine();
         E.dirtyFlag = 1;
         break;
+    case KEY_NPAGE:
+        for (int i = 0; i < LIMIT_Y - DEFPOS_Y; i++)
+            editorMoveCursor(KEY_DOWN);
+        break;
+    case KEY_PPAGE:
+        for (int i = 0; i < LIMIT_Y - DEFPOS_Y; i++)
+            editorMoveCursor(KEY_UP);
+        break;
     case KEY_HOME:
-        for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
-        {
-            editorMoveCursor(KEY_UP);
-            editorMoveCursor(KEY_UP);
-        }
-
+        E.Cx = DEFPOS_X;
+        E.x_offset = 0;
+        werase(win[EDIT_WINDOW]);
+        draw_window(EDIT_WINDOW);
         break;
     case KEY_END:
-        // wprintw(win[EDIT_WINDOW], "key end");
-        for (int i = 0; i < 1 * (E.Cy + E.y_offset); i++)
+        if (E.currentRow->row.size + 1 < LIMIT_X)
+            E.Cx = E.currentRow->row.size + 1;
+        else
         {
-            editorMoveCursor(KEY_DOWN);
-            editorMoveCursor(KEY_DOWN);
+            E.Cx = LIMIT_X;
+            E.x_offset = E.currentRow->row.size - LIMIT_X + 1;
         }
+        werase(win[EDIT_WINDOW]);
+        draw_window(EDIT_WINDOW);
         break;
     case KEY_ENTER:
     case KEY_NL:
@@ -1151,6 +1165,9 @@ void read_key()
     case KEY_DEL:
     case KEY_BACKSPACE:
         editorDelChar();
+        break;
+    case KEY_HT:
+        horiz_tab();
         break;
     case KEY_F(1):
         if (E.l.head != NULL)
