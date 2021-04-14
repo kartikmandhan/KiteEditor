@@ -2,6 +2,9 @@
 #include "init.h"
 #include "gui.h"
 #include "syntaxHL.h"
+#include "stack.h"
+stack undoStack;
+stack redoStack;
 void vlist_init(vlist *l)
 {
     l->head = l->tail = NULL;
@@ -114,6 +117,8 @@ void editor_init()
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
     E.current_theme = 50;
     change_theme(0);
+    s_init(&undoStack);
+    s_init(&redoStack);
 }
 void destroyDataStructure()
 {
@@ -364,6 +369,13 @@ void editorInsertChar(int c)
         appendRow(&E.l, "", 0);
     editorRowInsertChar(&E.currentRow->row, E.Cx + E.x_offset - DEFPOS_X, c);
     editorMoveCursor(KEY_RIGHT);
+    event *d = (event *)malloc(sizeof(event));
+    d->ch = c;
+    d->r = E.currentRow;
+    d->type = 1;
+    d->x_pos = E.Cx + E.x_offset;
+    d->y_pos = E.Cy + E.y_offset;
+    push(&undoStack, d);
     E.dirtyFlag = 1;
 }
 
@@ -830,15 +842,54 @@ void horiz_tab()
         E.Cx = LIMIT_X;
     }
 }
+void undo()
+{
+    event *e = pop(&undoStack);
+    if (e == NULL)
+        return;
+    push(&redoStack, e);
+    // vnode *prev = E.currentRow;
+    switch (e->type)
+    {
+    case 1:
+        E.currentRow = e->r;
+        if (e->x_pos < LIMIT_X)
+        {
+            E.Cx = e->x_pos;
+            E.x_offset = 0;
+        }
+        else
+        {
+            E.Cx = LIMIT_X;
+            E.x_offset = e->x_pos - LIMIT_X;
+        }
+        if (e->y_pos < LIMIT_Y)
+        {
+            E.Cy = e->y_pos;
+            E.y_offset = 0;
+        }
+        else
+        {
+            E.Cy = LIMIT_Y;
+            E.x_offset = e->y_pos - LIMIT_Y;
+        }
+        editorDelChar();
+        // E.currentRow = prev;
+        break;
+
+    default:
+        break;
+    }
+}
 void read_key()
 {
     int c = wgetch(win[EDIT_WINDOW]);
-    // wmove(win[EDIT_WINDOW], 10, 0);
     static int quit_times = KITE_QUIT_TIMES;
-
-    // printw("%c", c);
     switch (c)
     {
+    case CTRL_KEY('z'):
+        undo();
+        break;
     case CTRL_KEY('q'):
     case KEY_F(8):
         if (E.dirtyFlag && quit_times > 0)
