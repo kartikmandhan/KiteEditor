@@ -22,8 +22,6 @@ int init_colors()
     init_pair(9, COLOR_YELLOW, COLOR_BLUE);
     if (can_change_color())
     {
-        // color green is changed to rgb value as described
-
         // init_color(macro of color to be changed, 0-999, 0-999, 0-999);
         init_color(COLOR_BLUE, 121, 168, 215);
         init_color(COLOR_MAGENTA, 922, 360, 352);

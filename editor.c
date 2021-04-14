@@ -112,6 +112,8 @@ void editor_init()
     E.clip.len = 0;
     raw();
     wmove(win[EDIT_WINDOW], E.Cy, E.Cx);
+    E.current_theme = 50;
+    change_theme(0);
 }
 void destroyDataStructure()
 {
@@ -854,7 +856,7 @@ void read_key()
         break;
     case CTRL_KEY('t'):
     case KEY_F(4):
-        change_theme();
+        change_theme(1);
         break;
     case CTRL_KEY('g'):
         if (E.query != NULL)

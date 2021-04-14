@@ -257,15 +257,15 @@ int change_theme_popup(void)
     draw_window(EDIT_WINDOW);
     return choice;
 }
-void change_theme(void)
+void change_theme(int popup)
 {
     int fg_edit, bg_edit,
         fg_menu, bg_menu,
         fg_popup, bg_popup,
         fg_keywords, fg_comment,
         fg_numbers, fg_strings;
-
-    E.current_theme = change_theme_popup();
+    if (popup)
+        E.current_theme = change_theme_popup();
 
     switch (E.current_theme)
     {
@@ -324,8 +324,8 @@ void change_theme(void)
     wattrset(win[INFO_WINDOW], COLOR_PAIR(8));
     init_pair(9, COLOR_YELLOW, bg_edit);
     wattrset(win[INFO_WINDOW], COLOR_PAIR(9));
-
-    setEditorStatus(0, "theme successfully changed");
+    if (popup)
+        setEditorStatus(0, "theme successfully changed");
 }
 void get_help(void)
 {
